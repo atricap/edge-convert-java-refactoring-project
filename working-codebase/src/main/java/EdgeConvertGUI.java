@@ -2,7 +2,6 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
-import javax.swing.filechooser.FileFilter;
 import java.io.*;
 import java.util.*;
 import java.lang.reflect.*;
@@ -309,152 +308,21 @@ public class EdgeConvertGUI {
       
       jcheckDTDisallowNull = new JCheckBox("Disallow Null");
       jcheckDTDisallowNull.setEnabled(false);
-      jcheckDTDisallowNull.addItemListener(
-         new ItemListener() {
-            public void itemStateChanged(ItemEvent ie) {
-               currentDTField.setDisallowNull(jcheckDTDisallowNull.isSelected());
-               dataSaved = false;
-            }
-         }
-      );
+      jcheckDTDisallowNull.addItemListener(this::onDisallowNullItemStateChanged);
       
       jcheckDTPrimaryKey = new JCheckBox("Primary Key");
       jcheckDTPrimaryKey.setEnabled(false);
-      jcheckDTPrimaryKey.addItemListener(
-         new ItemListener() {
-            public void itemStateChanged(ItemEvent ie) {
-               currentDTField.setIsPrimaryKey(jcheckDTPrimaryKey.isSelected());
-               dataSaved = false;
-            }
-         }
-      );
+      jcheckDTPrimaryKey.addItemListener(this::onPrimaryKeyItemStateChanged);
       
       jbDTDefaultValue = new JButton("Set Default Value");
       jbDTDefaultValue.setEnabled(false);
-      jbDTDefaultValue.addActionListener(
-         new ActionListener() {
-            public void actionPerformed(ActionEvent ae) {
-               String prev = jtfDTDefaultValue.getText();
-               boolean goodData = false;
-               int i = currentDTField.getDataType();
-               do {
-                  String result = (String)JOptionPane.showInputDialog(
-                       null,
-                       "Enter the default value:",
-                       "Default Value",
-                       JOptionPane.PLAIN_MESSAGE,
-                       null,
-                       null,
-                       prev);
-
-                  if ((result == null)) {
-                     jtfDTDefaultValue.setText(prev);
-                     return;
-                  }
-                  switch (i) {
-                     case 0: //varchar
-                        if (result.length() <= Integer.parseInt(jtfDTVarchar.getText())) {
-                           jtfDTDefaultValue.setText(result);
-                           goodData = true;
-                        } else {
-                           JOptionPane.showMessageDialog(null, "The length of this value must be less than or equal to the Varchar length specified.");
-                        }
-                        break;
-                     case 1: //boolean
-                        String newResult = result.toLowerCase();
-                        if (newResult.equals("true") || newResult.equals("false")) {
-                           jtfDTDefaultValue.setText(newResult);
-                           goodData = true;
-                        } else {
-                           JOptionPane.showMessageDialog(null, "You must input a valid boolean value (\"true\" or \"false\").");
-                        }
-                        break;
-                     case 2: //Integer
-                        try {
-                           int intResult = Integer.parseInt(result);
-                           jtfDTDefaultValue.setText(result);
-                           goodData = true;
-                        } catch (NumberFormatException nfe) {
-                           JOptionPane.showMessageDialog(null, "\"" + result + "\" is not an integer or is outside the bounds of valid integer values.");
-                        }
-                        break;
-                     case 3: //Double
-                        try {
-                           double doubleResult = Double.parseDouble(result);
-                           jtfDTDefaultValue.setText(result);
-                           goodData = true;
-                        } catch (NumberFormatException nfe) {
-                           JOptionPane.showMessageDialog(null, "\"" + result + "\" is not a double or is outside the bounds of valid double values.");
-                        }
-                        break;
-                     case 4: //Timestamp
-                        try {
-                           jtfDTDefaultValue.setText(result);
-                           goodData = true;
-                        }
-                        catch (Exception e) {
-                           
-                        }
-                        break;
-                  }
-               } while (!goodData);
-               int selIndex = jlDTFieldsTablesAll.getSelectedIndex();
-               if (selIndex >= 0) {
-                  String selText = dlmDTFieldsTablesAll.getElementAt(selIndex).toString();
-                  setCurrentDTField(selText);
-                  currentDTField.setDefaultValue(jtfDTDefaultValue.getText());
-               }
-               dataSaved = false;
-            }
-         }
-      ); //jbDTDefaultValue.addActionListener
+      jbDTDefaultValue.addActionListener(this::onSetDefaultValueActionPerformed);
       jtfDTDefaultValue = new JTextField();
       jtfDTDefaultValue.setEditable(false);
 
       jbDTVarchar = new JButton("Set Varchar Length");
       jbDTVarchar.setEnabled(false);
-      jbDTVarchar.addActionListener(
-         new ActionListener() {
-            public void actionPerformed(ActionEvent ae) {
-               String prev = jtfDTVarchar.getText();
-               String result = (String)JOptionPane.showInputDialog(
-                    null,
-                    "Enter the varchar length:",
-                    "Varchar Length",
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    null,
-                    prev);
-               if ((result == null)) {
-                  jtfDTVarchar.setText(prev);
-                  return;
-               }
-               int selIndex = jlDTFieldsTablesAll.getSelectedIndex();
-               int varchar;
-               try {
-                  if (result.length() > 5) {
-                     JOptionPane.showMessageDialog(null, "Varchar length must be greater than 0 and less than or equal to 65535.");
-                     jtfDTVarchar.setText(Integer.toString(EdgeField.VARCHAR_DEFAULT_LENGTH));
-                     return;
-                  }
-                  varchar = Integer.parseInt(result);
-                  if (varchar > 0 && varchar <= 65535) { // max length of varchar is 255 before v5.0.3
-                     jtfDTVarchar.setText(Integer.toString(varchar));
-                     currentDTField.setVarcharValue(varchar);
-                  } else {
-                     JOptionPane.showMessageDialog(null, "Varchar length must be greater than 0 and less than or equal to 65535.");
-                     jtfDTVarchar.setText(Integer.toString(EdgeField.VARCHAR_DEFAULT_LENGTH));
-                     return;
-                  }
-               } catch (NumberFormatException nfe) {
-                  JOptionPane.showMessageDialog(null, "\"" + result + "\" is not a number");
-                  jtfDTVarchar.setText(Integer.toString(EdgeField.VARCHAR_DEFAULT_LENGTH));
-                  return;
-               }
-               dataSaved = false;
-            }
-         }
-      );
+      jbDTVarchar.addActionListener(this::onSetVarcharLengthActionPerformed);
       jtfDTVarchar = new JTextField();
       jtfDTVarchar.setEditable(false);
       
@@ -1081,7 +949,129 @@ public class EdgeConvertGUI {
          }
       }
    }
-   
+
+   private void onDisallowNullItemStateChanged(ItemEvent ie) {
+      currentDTField.setDisallowNull(jcheckDTDisallowNull.isSelected());
+      dataSaved = false;
+   }
+
+   private void onPrimaryKeyItemStateChanged(ItemEvent ie) {
+      currentDTField.setIsPrimaryKey(jcheckDTPrimaryKey.isSelected());
+      dataSaved = false;
+   }
+
+   private void onSetDefaultValueActionPerformed(ActionEvent ae) {
+      String prev = jtfDTDefaultValue.getText();
+      boolean goodData = false;
+      int i = currentDTField.getDataType();
+      do {
+         String result = (String) JOptionPane.showInputDialog(
+                 null,
+                 "Enter the default value:",
+                 "Default Value",
+                 JOptionPane.PLAIN_MESSAGE,
+                 null,
+                 null,
+                 prev);
+
+         if ((result == null)) {
+            jtfDTDefaultValue.setText(prev);
+            return;
+         }
+         switch (i) {
+            case 0: //varchar
+               if (result.length() <= Integer.parseInt(jtfDTVarchar.getText())) {
+                  jtfDTDefaultValue.setText(result);
+                  goodData = true;
+               } else {
+                  JOptionPane.showMessageDialog(null, "The length of this value must be less than or equal to the Varchar length specified.");
+               }
+               break;
+            case 1: //boolean
+               String newResult = result.toLowerCase();
+               if (newResult.equals("true") || newResult.equals("false")) {
+                  jtfDTDefaultValue.setText(newResult);
+                  goodData = true;
+               } else {
+                  JOptionPane.showMessageDialog(null, "You must input a valid boolean value (\"true\" or \"false\").");
+               }
+               break;
+            case 2: //Integer
+               try {
+                  int intResult = Integer.parseInt(result);
+                  jtfDTDefaultValue.setText(result);
+                  goodData = true;
+               } catch (NumberFormatException nfe) {
+                  JOptionPane.showMessageDialog(null, "\"" + result + "\" is not an integer or is outside the bounds of valid integer values.");
+               }
+               break;
+            case 3: //Double
+               try {
+                  double doubleResult = Double.parseDouble(result);
+                  jtfDTDefaultValue.setText(result);
+                  goodData = true;
+               } catch (NumberFormatException nfe) {
+                  JOptionPane.showMessageDialog(null, "\"" + result + "\" is not a double or is outside the bounds of valid double values.");
+               }
+               break;
+            case 4: //Timestamp
+               try {
+                  jtfDTDefaultValue.setText(result);
+                  goodData = true;
+               } catch (Exception e) {
+
+               }
+               break;
+         }
+      } while (!goodData);
+      int selIndex = jlDTFieldsTablesAll.getSelectedIndex();
+      if (selIndex >= 0) {
+         String selText = dlmDTFieldsTablesAll.getElementAt(selIndex).toString();
+         setCurrentDTField(selText);
+         currentDTField.setDefaultValue(jtfDTDefaultValue.getText());
+      }
+      dataSaved = false;
+   }
+
+   private void onSetVarcharLengthActionPerformed(ActionEvent ae) {
+      String prev = jtfDTVarchar.getText();
+      String result = (String) JOptionPane.showInputDialog(
+              null,
+              "Enter the varchar length:",
+              "Varchar Length",
+              JOptionPane.PLAIN_MESSAGE,
+              null,
+              null,
+              prev);
+      if ((result == null)) {
+         jtfDTVarchar.setText(prev);
+         return;
+      }
+      int selIndex = jlDTFieldsTablesAll.getSelectedIndex();
+      int varchar;
+      try {
+         if (result.length() > 5) {
+            JOptionPane.showMessageDialog(null, "Varchar length must be greater than 0 and less than or equal to 65535.");
+            jtfDTVarchar.setText(Integer.toString(EdgeField.VARCHAR_DEFAULT_LENGTH));
+            return;
+         }
+         varchar = Integer.parseInt(result);
+         if (varchar > 0 && varchar <= 65535) { // max length of varchar is 255 before v5.0.3
+            jtfDTVarchar.setText(Integer.toString(varchar));
+            currentDTField.setVarcharValue(varchar);
+         } else {
+            JOptionPane.showMessageDialog(null, "Varchar length must be greater than 0 and less than or equal to 65535.");
+            jtfDTVarchar.setText(Integer.toString(EdgeField.VARCHAR_DEFAULT_LENGTH));
+            return;
+         }
+      } catch (NumberFormatException nfe) {
+         JOptionPane.showMessageDialog(null, "\"" + result + "\" is not a number");
+         jtfDTVarchar.setText(Integer.toString(EdgeField.VARCHAR_DEFAULT_LENGTH));
+         return;
+      }
+      dataSaved = false;
+   }
+
    class EdgeRadioButtonListener implements ActionListener {
       public void actionPerformed(ActionEvent ae) {
          for (int i = 0; i < jrbDataType.length; i++) {
