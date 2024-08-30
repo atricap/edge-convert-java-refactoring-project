@@ -15,8 +15,9 @@ public class EdgeConvertGUI {
    public static final String DEFINE_TABLES = "Define Tables";
    public static final String DEFINE_RELATIONS = "Define Relations";
    public static final String CANCELLED = "CANCELLED";
-   private static JFileChooser jfcEdge, jfcGetClass, jfcOutputDir;
-   private static ExampleFileFilter effEdge, effSave, effClass;
+
+   private JFileChooser jfcEdge, jfcOutputDir;
+   private ExampleFileFilter effEdge, effSave;
    private File parseFile, saveFile, outputDir;
    private String truncatedFilename;
    private String databaseName;
@@ -24,9 +25,6 @@ public class EdgeConvertGUI {
    EdgeRadioButtonListener radioListener;
    EdgeWindowListener edgeWindowListener;
    CreateDDLButtonListener createDDLListener;
-   private EdgeConvertFileParser ecfp;
-   private EdgeConvertCreateDDL eccd;
-   private static PrintWriter pw;
    private EdgeTable[] tables; //master copy of EdgeTable objects
    private EdgeField[] fields; //master copy of EdgeField objects
    private EdgeTable currentDTTable, currentDRTable1, currentDRTable2; //pointers to currently selected table(s) on Define Tables (DT) and Define Relations (DR) screens
@@ -39,33 +37,33 @@ public class EdgeConvertGUI {
    private Object[] objSubclasses;
 
    //Define Tables screen objects
-   static JFrame jfDT;
-   static JPanel jpDTBottom, jpDTCenter, jpDTCenter1, jpDTCenter2, jpDTCenterRight, jpDTCenterRight1, jpDTCenterRight2, jpDTMove;
-   static JButton jbDTCreateDDL, jbDTDefineRelations, jbDTVarchar, jbDTDefaultValue, jbDTMoveUp, jbDTMoveDown;
-   static ButtonGroup bgDTDataType;
-   static JRadioButton[] jrbDataType;
-   static String[] strDataType;
-   static JCheckBox jcheckDTDisallowNull, jcheckDTPrimaryKey;
-   static JTextField jtfDTVarchar, jtfDTDefaultValue;
-   static JLabel jlabDTTables, jlabDTFields;
-   static JScrollPane jspDTTablesAll, jspDTFieldsTablesAll;
-   static JList<String> jlDTTablesAll, jlDTFieldsTablesAll;
-   static DefaultListModel<String> dlmDTTablesAll, dlmDTFieldsTablesAll;
-   static JMenuBar jmbDTMenuBar;
-   static JMenu jmDTFile, jmDTOptions, jmDTHelp;
-   static JMenuItem jmiDTOpenEdge, jmiDTOpenSave, jmiDTSave, jmiDTSaveAs, jmiDTExit, jmiDTOptionsOutputLocation, jmiDTOptionsShowProducts, jmiDTHelpAbout;
+   JFrame jfDT;
+   JPanel jpDTBottom, jpDTCenter, jpDTCenter1, jpDTCenter2, jpDTCenterRight, jpDTCenterRight1, jpDTCenterRight2, jpDTMove;
+   JButton jbDTCreateDDL, jbDTDefineRelations, jbDTVarchar, jbDTDefaultValue, jbDTMoveUp, jbDTMoveDown;
+   ButtonGroup bgDTDataType;
+   JRadioButton[] jrbDataType;
+   String[] strDataType;
+   JCheckBox jcheckDTDisallowNull, jcheckDTPrimaryKey;
+   JTextField jtfDTVarchar, jtfDTDefaultValue;
+   JLabel jlabDTTables, jlabDTFields;
+   JScrollPane jspDTTablesAll, jspDTFieldsTablesAll;
+   JList<String> jlDTTablesAll, jlDTFieldsTablesAll;
+   DefaultListModel<String> dlmDTTablesAll, dlmDTFieldsTablesAll;
+   JMenuBar jmbDTMenuBar;
+   JMenu jmDTFile, jmDTOptions, jmDTHelp;
+   JMenuItem jmiDTOpenEdge, jmiDTOpenSave, jmiDTSave, jmiDTSaveAs, jmiDTExit, jmiDTOptionsOutputLocation, jmiDTOptionsShowProducts, jmiDTHelpAbout;
    
    //Define Relations screen objects
-   static JFrame jfDR;
-   static JPanel jpDRBottom, jpDRCenter, jpDRCenter1, jpDRCenter2, jpDRCenter3, jpDRCenter4;
-   static JButton jbDRCreateDDL, jbDRDefineTables, jbDRBindRelation;
-   static JList<String> jlDRTablesRelations, jlDRTablesRelatedTo, jlDRFieldsTablesRelations, jlDRFieldsTablesRelatedTo;
-   static DefaultListModel<String> dlmDRTablesRelations, dlmDRTablesRelatedTo, dlmDRFieldsTablesRelations, dlmDRFieldsTablesRelatedTo;
-   static JLabel jlabDRTablesRelations, jlabDRTablesRelatedTo, jlabDRFieldsTablesRelations, jlabDRFieldsTablesRelatedTo;
-   static JScrollPane jspDRTablesRelations, jspDRTablesRelatedTo, jspDRFieldsTablesRelations, jspDRFieldsTablesRelatedTo;
-   static JMenuBar jmbDRMenuBar;
-   static JMenu jmDRFile, jmDROptions, jmDRHelp;
-   static JMenuItem jmiDROpenEdge, jmiDROpenSave, jmiDRSave, jmiDRSaveAs, jmiDRExit, jmiDROptionsOutputLocation, jmiDROptionsShowProducts, jmiDRHelpAbout;
+   JFrame jfDR;
+   JPanel jpDRBottom, jpDRCenter, jpDRCenter1, jpDRCenter2, jpDRCenter3, jpDRCenter4;
+   JButton jbDRCreateDDL, jbDRDefineTables, jbDRBindRelation;
+   JList<String> jlDRTablesRelations, jlDRTablesRelatedTo, jlDRFieldsTablesRelations, jlDRFieldsTablesRelatedTo;
+   DefaultListModel<String> dlmDRTablesRelations, dlmDRTablesRelatedTo, dlmDRFieldsTablesRelations, dlmDRFieldsTablesRelatedTo;
+   JLabel jlabDRTablesRelations, jlabDRTablesRelatedTo, jlabDRFieldsTablesRelations, jlabDRFieldsTablesRelatedTo;
+   JScrollPane jspDRTablesRelations, jspDRTablesRelatedTo, jspDRFieldsTablesRelations, jspDRFieldsTablesRelatedTo;
+   JMenuBar jmbDRMenuBar;
+   JMenu jmDRFile, jmDROptions, jmDRHelp;
+   JMenuItem jmiDROpenEdge, jmiDROpenSave, jmiDRSave, jmiDRSaveAs, jmiDRExit, jmiDROptionsOutputLocation, jmiDROptionsShowProducts, jmiDRHelpAbout;
    
    public EdgeConvertGUI() {
       menuListener = new EdgeMenuListener();
@@ -743,7 +741,7 @@ public class EdgeConvertGUI {
    private void writeSave() {
       if (saveFile != null) {
          try {
-            pw = new PrintWriter(new BufferedWriter(new FileWriter(saveFile, false)));
+            PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(saveFile, false)));
             //write the identification line
             pw.println(EdgeConvertFileParser.SAVE_ID);
             //write the tables 
@@ -918,7 +916,7 @@ public class EdgeConvertGUI {
              }
          }
          try {
-            pw = new PrintWriter(new BufferedWriter(new FileWriter(outputFile, false)));
+            PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(outputFile, false)));
             //write the SQL statements
             pw.println(output);
             //close the file
@@ -1185,13 +1183,12 @@ public class EdgeConvertGUI {
       }
       parseFile = optParseFile.get();
 
-      ecfp = new EdgeConvertFileParser(parseFile);
+      EdgeConvertFileParser ecfp = new EdgeConvertFileParser(parseFile);
       tables = ecfp.getEdgeTables();
       for (EdgeTable table : tables) {
          table.makeArrays();
       }
       fields = ecfp.getEdgeFields();
-      ecfp = null;
       populateLists();
       saveFile = null;
       jmiDTSave.setEnabled(false);
@@ -1216,10 +1213,9 @@ public class EdgeConvertGUI {
       }
       saveFile = optSaveFile.get();
 
-      ecfp = new EdgeConvertFileParser(saveFile);
+      EdgeConvertFileParser ecfp = new EdgeConvertFileParser(saveFile);
       tables = ecfp.getEdgeTables();
       fields = ecfp.getEdgeFields();
-      ecfp = null;
       populateLists();
       parseFile = null;
       jmiDTSave.setEnabled(true);
