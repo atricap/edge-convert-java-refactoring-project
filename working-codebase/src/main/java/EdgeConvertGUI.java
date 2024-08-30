@@ -838,16 +838,12 @@ public class EdgeConvertGUI {
                   alProductNames.add(productName);
               }
           }
-      } catch (InstantiationException ie) {
-         ie.printStackTrace();
-      } catch (ClassNotFoundException cnfe) {
-         cnfe.printStackTrace();
-      } catch (IllegalAccessException iae) {
-         iae.printStackTrace();
-      } catch (NoSuchMethodException nsme) {
-         nsme.printStackTrace();
-      } catch (InvocationTargetException ite) {
-         ite.printStackTrace();
+      } catch (InstantiationException |
+               ClassNotFoundException |
+               IllegalAccessException |
+               NoSuchMethodException |
+               InvocationTargetException ex) {
+         ex.printStackTrace();
       }
       if (!alProductNames.isEmpty() && !alSubclasses.isEmpty()) { //do not recreate productName and objSubClasses arrays if the new path is empty of valid files
          productNames = alProductNames.toArray(new String[0]);
@@ -883,12 +879,10 @@ public class EdgeConvertGUI {
          Method getDatabaseName = selectedSubclass.getMethod("getDatabaseName", null);
          strSQLString = (String)getSQLString.invoke(objSubclasses[selected], null);
          databaseName = (String)getDatabaseName.invoke(objSubclasses[selected], null);
-      } catch (IllegalAccessException iae) {
-         iae.printStackTrace();
-      } catch (NoSuchMethodException nsme) {
-         nsme.printStackTrace();
-      } catch (InvocationTargetException ite) {
-         ite.printStackTrace();
+      } catch (IllegalAccessException |
+               NoSuchMethodException |
+               InvocationTargetException ex) {
+         ex.printStackTrace();
       }
 
       return strSQLString;
