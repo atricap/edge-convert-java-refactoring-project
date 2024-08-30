@@ -17,9 +17,8 @@ public class EdgeConvertGUI {
    public static final String CANCELLED = "CANCELLED";
    private static JFileChooser jfcEdge, jfcGetClass, jfcOutputDir;
    private static ExampleFileFilter effEdge, effSave, effClass;
-   private File parseFile, saveFile, outputFile, outputDir, outputDirOld;
+   private File parseFile, saveFile, outputDir;
    private String truncatedFilename;
-   private String sqlString;
    private String databaseName;
    EdgeMenuListener menuListener;
    EdgeRadioButtonListener radioListener;
@@ -34,7 +33,8 @@ public class EdgeConvertGUI {
    private EdgeField currentDTField, currentDRField1, currentDRField2; //pointers to currently selected field(s) on Define Tables (DT) and Define Relations (DR) screens
    private static boolean readSuccess = true; //this tells GUI whether to populate JList components or not
    private boolean dataSaved = true;
-   private ArrayList alSubclasses, alProductNames;
+   private ArrayList<Object> alSubclasses;
+   private ArrayList<String> alProductNames;
    private String[] productNames;
    private Object[] objSubclasses;
 
@@ -161,14 +161,12 @@ public class EdgeConvertGUI {
       jbDTDefineRelations = new JButton (DEFINE_RELATIONS);
       jbDTDefineRelations.setEnabled(false);
       jbDTDefineRelations.addActionListener(
-         new ActionListener() {
-            public void actionPerformed(ActionEvent ae) {
-               jfDT.setVisible(false);
-               jfDR.setVisible(true); //show the Define Relations screen
-               clearDTControls();
-               dlmDTFieldsTablesAll.removeAllElements();
-            }
-         }
+              (ActionEvent ae) -> {
+                 jfDT.setVisible(false);
+                 jfDR.setVisible(true); //show the Define Relations screen
+                 clearDTControls();
+                 dlmDTFieldsTablesAll.removeAllElements();
+              }
       );
 
       jpDTBottom.add(jbDTDefineRelations);
@@ -180,100 +178,92 @@ public class EdgeConvertGUI {
       dlmDTTablesAll = new DefaultListModel<>();
       jlDTTablesAll = new JList<>(dlmDTTablesAll);
       jlDTTablesAll.addListSelectionListener(
-         new ListSelectionListener() {
-            public void valueChanged(ListSelectionEvent lse)  {
-               int selIndex = jlDTTablesAll.getSelectedIndex();
-               if (selIndex >= 0) {
-                  String selText = dlmDTTablesAll.getElementAt(selIndex);
-                  setCurrentDTTable(selText); //set pointer to the selected table
-                  int[] currentNativeFields = currentDTTable.getNativeFieldsArray();
-                  jlDTFieldsTablesAll.clearSelection();
-                  dlmDTFieldsTablesAll.removeAllElements();
-                  jbDTMoveUp.setEnabled(false);
-                  jbDTMoveDown.setEnabled(false);
-                  for (int fIndex = 0; fIndex < currentNativeFields.length; fIndex++) {
-                     dlmDTFieldsTablesAll.addElement(getFieldName(currentNativeFields[fIndex]));
-                  }
-               }
-               disableControls();
-            }
-         }
+              (ListSelectionEvent lse) -> {
+                 int selIndex = jlDTTablesAll.getSelectedIndex();
+                 if (selIndex >= 0) {
+                    String selText = dlmDTTablesAll.getElementAt(selIndex);
+                    setCurrentDTTable(selText); //set pointer to the selected table
+                    int[] currentNativeFields = currentDTTable.getNativeFieldsArray();
+                    jlDTFieldsTablesAll.clearSelection();
+                    dlmDTFieldsTablesAll.removeAllElements();
+                    jbDTMoveUp.setEnabled(false);
+                    jbDTMoveDown.setEnabled(false);
+                    for (int currentNativeField : currentNativeFields) {
+                       dlmDTFieldsTablesAll.addElement(getFieldName(currentNativeField));
+                    }
+                 }
+                 disableControls();
+              }
       );
       
       dlmDTFieldsTablesAll = new DefaultListModel<>();
       jlDTFieldsTablesAll = new JList<>(dlmDTFieldsTablesAll);
       jlDTFieldsTablesAll.addListSelectionListener(
-         new ListSelectionListener() {
-            public void valueChanged(ListSelectionEvent lse) {
-               int selIndex = jlDTFieldsTablesAll.getSelectedIndex();
-               if (selIndex >= 0) {
-                  if (selIndex == 0) {
-                     jbDTMoveUp.setEnabled(false);
-                  } else {
-                     jbDTMoveUp.setEnabled(true);
-                  }
-                  if (selIndex == (dlmDTFieldsTablesAll.getSize() - 1)) {
-                     jbDTMoveDown.setEnabled(false);
-                  } else {
-                     jbDTMoveDown.setEnabled(true);
-                  }
-                  String selText = dlmDTFieldsTablesAll.getElementAt(selIndex);
-                  setCurrentDTField(selText); //set pointer to the selected field
-                  enableControls();
-                  jrbDataType[currentDTField.getDataType()].setSelected(true); //select the appropriate radio button, based on value of dataType
-                  if (jrbDataType[0].isSelected()) { //this is the Varchar radio button
-                     jbDTVarchar.setEnabled(true); //enable the Varchar button
-                     jtfDTVarchar.setText(Integer.toString(currentDTField.getVarcharValue())); //fill text field with varcharValue
-                  } else { //some radio button other than Varchar is selected
-                     jtfDTVarchar.setText(""); //clear the text field
-                     jbDTVarchar.setEnabled(false); //disable the button
-                  }
-                  jcheckDTPrimaryKey.setSelected(currentDTField.getIsPrimaryKey()); //clear or set Primary Key checkbox
-                  jcheckDTDisallowNull.setSelected(currentDTField.getDisallowNull()); //clear or set Disallow Null checkbox
-                  jtfDTDefaultValue.setText(currentDTField.getDefaultValue()); //fill text field with defaultValue
-               }
-            }
-         }
+              (ListSelectionEvent lse) -> {
+                 int selIndex = jlDTFieldsTablesAll.getSelectedIndex();
+                 if (selIndex >= 0) {
+                    if (selIndex == 0) {
+                       jbDTMoveUp.setEnabled(false);
+                    } else {
+                       jbDTMoveUp.setEnabled(true);
+                    }
+                    if (selIndex == (dlmDTFieldsTablesAll.getSize() - 1)) {
+                       jbDTMoveDown.setEnabled(false);
+                    } else {
+                       jbDTMoveDown.setEnabled(true);
+                    }
+                    String selText = dlmDTFieldsTablesAll.getElementAt(selIndex);
+                    setCurrentDTField(selText); //set pointer to the selected field
+                    enableControls();
+                    jrbDataType[currentDTField.getDataType()].setSelected(true); //select the appropriate radio button, based on value of dataType
+                    if (jrbDataType[0].isSelected()) { //this is the Varchar radio button
+                       jbDTVarchar.setEnabled(true); //enable the Varchar button
+                       jtfDTVarchar.setText(Integer.toString(currentDTField.getVarcharValue())); //fill text field with varcharValue
+                    } else { //some radio button other than Varchar is selected
+                       jtfDTVarchar.setText(""); //clear the text field
+                       jbDTVarchar.setEnabled(false); //disable the button
+                    }
+                    jcheckDTPrimaryKey.setSelected(currentDTField.getIsPrimaryKey()); //clear or set Primary Key checkbox
+                    jcheckDTDisallowNull.setSelected(currentDTField.getDisallowNull()); //clear or set Disallow Null checkbox
+                    jtfDTDefaultValue.setText(currentDTField.getDefaultValue()); //fill text field with defaultValue
+                 }
+              }
       );
       
       jpDTMove = new JPanel(new GridLayout(2, 1));
       jbDTMoveUp = new JButton("^");
       jbDTMoveUp.setEnabled(false);
       jbDTMoveUp.addActionListener(
-         new ActionListener() {
-            public void actionPerformed(ActionEvent ae) {
-               int selection = jlDTFieldsTablesAll.getSelectedIndex();
-               currentDTTable.moveFieldUp(selection);
-               //repopulate Fields List
-               int[] currentNativeFields = currentDTTable.getNativeFieldsArray();
-               jlDTFieldsTablesAll.clearSelection();
-               dlmDTFieldsTablesAll.removeAllElements();
-               for (int fIndex = 0; fIndex < currentNativeFields.length; fIndex++) {
-                  dlmDTFieldsTablesAll.addElement(getFieldName(currentNativeFields[fIndex]));
-               }
-               jlDTFieldsTablesAll.setSelectedIndex(selection - 1);
-               dataSaved = false;
-            }
-         }
+              (ActionEvent ae) -> {
+                 int selection = jlDTFieldsTablesAll.getSelectedIndex();
+                 currentDTTable.moveFieldUp(selection);
+                 //repopulate Fields List
+                 int[] currentNativeFields = currentDTTable.getNativeFieldsArray();
+                 jlDTFieldsTablesAll.clearSelection();
+                 dlmDTFieldsTablesAll.removeAllElements();
+                 for (int currentNativeField : currentNativeFields) {
+                    dlmDTFieldsTablesAll.addElement(getFieldName(currentNativeField));
+                 }
+                 jlDTFieldsTablesAll.setSelectedIndex(selection - 1);
+                 dataSaved = false;
+              }
       );
       jbDTMoveDown = new JButton("v");
       jbDTMoveDown.setEnabled(false);
       jbDTMoveDown.addActionListener(
-         new ActionListener() {
-            public void actionPerformed(ActionEvent ae) {
-               int selection = jlDTFieldsTablesAll.getSelectedIndex(); //the original selected index
-               currentDTTable.moveFieldDown(selection);
-               //repopulate Fields List
-               int[] currentNativeFields = currentDTTable.getNativeFieldsArray();
-               jlDTFieldsTablesAll.clearSelection();
-               dlmDTFieldsTablesAll.removeAllElements();
-               for (int fIndex = 0; fIndex < currentNativeFields.length; fIndex++) {
-                  dlmDTFieldsTablesAll.addElement(getFieldName(currentNativeFields[fIndex]));
-               }
-               jlDTFieldsTablesAll.setSelectedIndex(selection + 1);
-               dataSaved = false;
-            }
-         }
+              (ActionEvent ae) -> {
+                 int selection = jlDTFieldsTablesAll.getSelectedIndex(); //the original selected index
+                 currentDTTable.moveFieldDown(selection);
+                 //repopulate Fields List
+                 int[] currentNativeFields = currentDTTable.getNativeFieldsArray();
+                 jlDTFieldsTablesAll.clearSelection();
+                 dlmDTFieldsTablesAll.removeAllElements();
+                 for (int currentNativeField : currentNativeFields) {
+                    dlmDTFieldsTablesAll.addElement(getFieldName(currentNativeField));
+                 }
+                 jlDTFieldsTablesAll.setSelectedIndex(selection + 1);
+                 dataSaved = false;
+              }
       );
       jpDTMove.add(jbDTMoveUp);
       jpDTMove.add(jbDTMoveDown);
@@ -408,88 +398,80 @@ public class EdgeConvertGUI {
       dlmDRTablesRelations = new DefaultListModel<>();
       jlDRTablesRelations = new JList<>(dlmDRTablesRelations);
       jlDRTablesRelations.addListSelectionListener(
-         new ListSelectionListener() {
-            public void valueChanged(ListSelectionEvent lse)  {
-               int selIndex = jlDRTablesRelations.getSelectedIndex();
-               if (selIndex >= 0) {
-                  String selText = dlmDRTablesRelations.getElementAt(selIndex);
-                  setCurrentDRTable1(selText);
-                  int[] currentNativeFields, currentRelatedTables, currentRelatedFields;
-                  currentNativeFields = currentDRTable1.getNativeFieldsArray();
-                  currentRelatedTables = currentDRTable1.getRelatedTablesArray();
-                  jlDRFieldsTablesRelations.clearSelection();
-                  jlDRTablesRelatedTo.clearSelection();
-                  jlDRFieldsTablesRelatedTo.clearSelection();
-                  dlmDRFieldsTablesRelations.removeAllElements();
-                  dlmDRTablesRelatedTo.removeAllElements();
-                  dlmDRFieldsTablesRelatedTo.removeAllElements();
-                  for (int fIndex = 0; fIndex < currentNativeFields.length; fIndex++) {
-                     dlmDRFieldsTablesRelations.addElement(getFieldName(currentNativeFields[fIndex]));
-                  }
-                  for (int rIndex = 0; rIndex < currentRelatedTables.length; rIndex++) {
-                     dlmDRTablesRelatedTo.addElement(getTableName(currentRelatedTables[rIndex]));
-                  }
-               }
-            }
-         }
+              (ListSelectionEvent lse) -> {
+                 int selIndex = jlDRTablesRelations.getSelectedIndex();
+                 if (selIndex >= 0) {
+                    String selText = dlmDRTablesRelations.getElementAt(selIndex);
+                    setCurrentDRTable1(selText);
+                    int[] currentNativeFields, currentRelatedTables, currentRelatedFields;
+                    currentNativeFields = currentDRTable1.getNativeFieldsArray();
+                    currentRelatedTables = currentDRTable1.getRelatedTablesArray();
+                    jlDRFieldsTablesRelations.clearSelection();
+                    jlDRTablesRelatedTo.clearSelection();
+                    jlDRFieldsTablesRelatedTo.clearSelection();
+                    dlmDRFieldsTablesRelations.removeAllElements();
+                    dlmDRTablesRelatedTo.removeAllElements();
+                    dlmDRFieldsTablesRelatedTo.removeAllElements();
+                    for (int currentNativeField : currentNativeFields) {
+                       dlmDRFieldsTablesRelations.addElement(getFieldName(currentNativeField));
+                    }
+                    for (int currentRelatedTable : currentRelatedTables) {
+                       dlmDRTablesRelatedTo.addElement(getTableName(currentRelatedTable));
+                    }
+                 }
+              }
       );
 
       dlmDRFieldsTablesRelations = new DefaultListModel<>();
       jlDRFieldsTablesRelations = new JList<>(dlmDRFieldsTablesRelations);
       jlDRFieldsTablesRelations.addListSelectionListener(
-         new ListSelectionListener() {
-            public void valueChanged(ListSelectionEvent lse)  {
-               int selIndex = jlDRFieldsTablesRelations.getSelectedIndex();
-               if (selIndex >= 0) {
-                  String selText = dlmDRFieldsTablesRelations.getElementAt(selIndex);
-                  setCurrentDRField1(selText);
-                  if (currentDRField1.getFieldBound() == 0) {
-                     jlDRTablesRelatedTo.clearSelection();
-                     jlDRFieldsTablesRelatedTo.clearSelection();
-                     dlmDRFieldsTablesRelatedTo.removeAllElements();
-                  } else {
-                     jlDRTablesRelatedTo.setSelectedValue(getTableName(currentDRField1.getTableBound()), true);
-                     jlDRFieldsTablesRelatedTo.setSelectedValue(getFieldName(currentDRField1.getFieldBound()), true);
-                  }
-               }
-            }
-         }
+              (ListSelectionEvent lse) -> {
+                 int selIndex = jlDRFieldsTablesRelations.getSelectedIndex();
+                 if (selIndex >= 0) {
+                    String selText = dlmDRFieldsTablesRelations.getElementAt(selIndex);
+                    setCurrentDRField1(selText);
+                    if (currentDRField1.getFieldBound() == 0) {
+                       jlDRTablesRelatedTo.clearSelection();
+                       jlDRFieldsTablesRelatedTo.clearSelection();
+                       dlmDRFieldsTablesRelatedTo.removeAllElements();
+                    } else {
+                       jlDRTablesRelatedTo.setSelectedValue(getTableName(currentDRField1.getTableBound()), true);
+                       jlDRFieldsTablesRelatedTo.setSelectedValue(getFieldName(currentDRField1.getFieldBound()), true);
+                    }
+                 }
+              }
       );
 
       dlmDRTablesRelatedTo = new DefaultListModel<>();
       jlDRTablesRelatedTo = new JList<>(dlmDRTablesRelatedTo);
       jlDRTablesRelatedTo.addListSelectionListener(
-         new ListSelectionListener() {
-            public void valueChanged(ListSelectionEvent lse)  {
-               int selIndex = jlDRTablesRelatedTo.getSelectedIndex();
-               if (selIndex >= 0) {
-                  String selText = dlmDRTablesRelatedTo.getElementAt(selIndex);
-                  setCurrentDRTable2(selText);
-                  int[] currentNativeFields = currentDRTable2.getNativeFieldsArray();
-                  dlmDRFieldsTablesRelatedTo.removeAllElements();
-                  for (int fIndex = 0; fIndex < currentNativeFields.length; fIndex++) {
-                     dlmDRFieldsTablesRelatedTo.addElement(getFieldName(currentNativeFields[fIndex]));
-                  }
-               }
-            }
-         }
+              (ListSelectionEvent lse) -> {
+                 int selIndex = jlDRTablesRelatedTo.getSelectedIndex();
+                 if (selIndex >= 0) {
+                    String selText = dlmDRTablesRelatedTo.getElementAt(selIndex);
+                    setCurrentDRTable2(selText);
+                    int[] currentNativeFields = currentDRTable2.getNativeFieldsArray();
+                    dlmDRFieldsTablesRelatedTo.removeAllElements();
+                    for (int currentNativeField : currentNativeFields) {
+                       dlmDRFieldsTablesRelatedTo.addElement(getFieldName(currentNativeField));
+                    }
+                 }
+              }
       );
 
       dlmDRFieldsTablesRelatedTo = new DefaultListModel<>();
       jlDRFieldsTablesRelatedTo = new JList<>(dlmDRFieldsTablesRelatedTo);
       jlDRFieldsTablesRelatedTo.addListSelectionListener(
-         new ListSelectionListener() {
-            public void valueChanged(ListSelectionEvent lse)  {
-               int selIndex = jlDRFieldsTablesRelatedTo.getSelectedIndex();
-               if (selIndex >= 0) {
-                  String selText = dlmDRFieldsTablesRelatedTo.getElementAt(selIndex);
-                  setCurrentDRField2(selText);
-                  jbDRBindRelation.setEnabled(true);
-               } else {
-                  jbDRBindRelation.setEnabled(false);
-               }
-            }
-         }
+              (ListSelectionEvent lse) -> {
+                 int selIndex = jlDRFieldsTablesRelatedTo.getSelectedIndex();
+                 if (selIndex >= 0) {
+                    String selText = dlmDRFieldsTablesRelatedTo.getElementAt(selIndex);
+                    setCurrentDRField2(selText);
+                    jbDRBindRelation.setEnabled(true);
+                 } else {
+                    jbDRBindRelation.setEnabled(false);
+                 }
+              }
       );
 
       jspDRTablesRelations = new JScrollPane(jlDRTablesRelations);
@@ -517,69 +499,65 @@ public class EdgeConvertGUI {
 
       jbDRDefineTables = new JButton(DEFINE_TABLES);
       jbDRDefineTables.addActionListener(
-         new ActionListener() {
-            public void actionPerformed(ActionEvent ae) {
-               jfDT.setVisible(true); //show the Define Tables screen
-               jfDR.setVisible(false);
-               clearDRControls();
-               depopulateLists();
-               populateLists();
-            }
-         }
+              (ActionEvent ae) -> {
+                 jfDT.setVisible(true); //show the Define Tables screen
+                 jfDR.setVisible(false);
+                 clearDRControls();
+                 depopulateLists();
+                 populateLists();
+              }
       );
 
       jbDRBindRelation = new JButton("Bind/Unbind Relation");
       jbDRBindRelation.setEnabled(false);
       jbDRBindRelation.addActionListener(
-         new ActionListener() {
-            public void actionPerformed(ActionEvent ae) {
-               int nativeIndex = jlDRFieldsTablesRelations.getSelectedIndex();
-               int relatedField = currentDRField2.getNumFigure();
-               if (currentDRField1.getFieldBound() == relatedField) { //the selected fields are already bound to each other
-                  int answer = JOptionPane.showConfirmDialog(null, "Do you wish to unbind the relation on field " +
-                                                             currentDRField1.getName() + "?",
-                                                             "Are you sure?", JOptionPane.YES_NO_OPTION);
-                  if (answer == JOptionPane.YES_OPTION) {
-                     currentDRTable1.setRelatedField(nativeIndex, 0); //clear the related field
-                     currentDRField1.setTableBound(0); //clear the bound table
-                     currentDRField1.setFieldBound(0); //clear the bound field
-                     jlDRFieldsTablesRelatedTo.clearSelection(); //clear the listbox selection
-                  }
-                  return;
-               }
-               if (currentDRField1.getFieldBound() != 0) { //field is already bound to a different field
-                  int answer = JOptionPane.showConfirmDialog(null, "There is already a relation defined on field " +
-                                                             currentDRField1.getName() + ", do you wish to overwrite it?",
-                                                             "Are you sure?", JOptionPane.YES_NO_OPTION);
-                  if (answer == JOptionPane.NO_OPTION || answer == JOptionPane.CLOSED_OPTION) {
-                     jlDRTablesRelatedTo.setSelectedValue(getTableName(currentDRField1.getTableBound()), true); //revert selections to saved settings
-                     jlDRFieldsTablesRelatedTo.setSelectedValue(getFieldName(currentDRField1.getFieldBound()), true); //revert selections to saved settings
-                     return;
-                  }
-               }
-               if (currentDRField1.getDataType() != currentDRField2.getDataType()) {
-                  JOptionPane.showMessageDialog(null, "The datatypes of " + currentDRTable1.getName() + "." +
-                                                currentDRField1.getName() + " and " + currentDRTable2.getName() +
-                                                "." + currentDRField2.getName() + " do not match.  Unable to bind this relation.");
-                  return;
-               }
-               if ((currentDRField1.getDataType() == 0) && (currentDRField2.getDataType() == 0)) {
-                  if (currentDRField1.getVarcharValue() != currentDRField2.getVarcharValue()) {
-                     JOptionPane.showMessageDialog(null, "The varchar lengths of " + currentDRTable1.getName() + "." +
-                                                   currentDRField1.getName() + " and " + currentDRTable2.getName() +
-                                                   "." + currentDRField2.getName() + " do not match.  Unable to bind this relation.");
-                     return;
-                  }
-               }
-               currentDRTable1.setRelatedField(nativeIndex, relatedField);
-               currentDRField1.setTableBound(currentDRTable2.getNumFigure());
-               currentDRField1.setFieldBound(currentDRField2.getNumFigure());
-               JOptionPane.showMessageDialog(null, "Table " + currentDRTable1.getName() + ": native field " +
-                                             currentDRField1.getName() + " bound to table " + currentDRTable2.getName() +
-                                             " on field " + currentDRField2.getName());
-               dataSaved = false;
-            }
-         }
+              (ActionEvent ae) -> {
+                 int nativeIndex = jlDRFieldsTablesRelations.getSelectedIndex();
+                 int relatedField = currentDRField2.getNumFigure();
+                 if (currentDRField1.getFieldBound() == relatedField) { //the selected fields are already bound to each other
+                    int answer = JOptionPane.showConfirmDialog(null, "Do you wish to unbind the relation on field " +
+                                                               currentDRField1.getName() + "?",
+                                                               "Are you sure?", JOptionPane.YES_NO_OPTION);
+                    if (answer == JOptionPane.YES_OPTION) {
+                       currentDRTable1.setRelatedField(nativeIndex, 0); //clear the related field
+                       currentDRField1.setTableBound(0); //clear the bound table
+                       currentDRField1.setFieldBound(0); //clear the bound field
+                       jlDRFieldsTablesRelatedTo.clearSelection(); //clear the listbox selection
+                    }
+                    return;
+                 }
+                 if (currentDRField1.getFieldBound() != 0) { //field is already bound to a different field
+                    int answer = JOptionPane.showConfirmDialog(null, "There is already a relation defined on field " +
+                                                               currentDRField1.getName() + ", do you wish to overwrite it?",
+                                                               "Are you sure?", JOptionPane.YES_NO_OPTION);
+                    if (answer == JOptionPane.NO_OPTION || answer == JOptionPane.CLOSED_OPTION) {
+                       jlDRTablesRelatedTo.setSelectedValue(getTableName(currentDRField1.getTableBound()), true); //revert selections to saved settings
+                       jlDRFieldsTablesRelatedTo.setSelectedValue(getFieldName(currentDRField1.getFieldBound()), true); //revert selections to saved settings
+                       return;
+                    }
+                 }
+                 if (currentDRField1.getDataType() != currentDRField2.getDataType()) {
+                    JOptionPane.showMessageDialog(null, "The datatypes of " + currentDRTable1.getName() + "." +
+                                                  currentDRField1.getName() + " and " + currentDRTable2.getName() +
+                                                  "." + currentDRField2.getName() + " do not match.  Unable to bind this relation.");
+                    return;
+                 }
+                 if ((currentDRField1.getDataType() == 0) && (currentDRField2.getDataType() == 0)) {
+                    if (currentDRField1.getVarcharValue() != currentDRField2.getVarcharValue()) {
+                       JOptionPane.showMessageDialog(null, "The varchar lengths of " + currentDRTable1.getName() + "." +
+                                                     currentDRField1.getName() + " and " + currentDRTable2.getName() +
+                                                     "." + currentDRField2.getName() + " do not match.  Unable to bind this relation.");
+                       return;
+                    }
+                 }
+                 currentDRTable1.setRelatedField(nativeIndex, relatedField);
+                 currentDRField1.setTableBound(currentDRTable2.getNumFigure());
+                 currentDRField1.setFieldBound(currentDRField2.getNumFigure());
+                 JOptionPane.showMessageDialog(null, "Table " + currentDRTable1.getName() + ": native field " +
+                                               currentDRField1.getName() + " bound to table " + currentDRTable2.getName() +
+                                               " on field " + currentDRField2.getName());
+                 dataSaved = false;
+              }
       );
 
       jbDRCreateDDL = new JButton("Create DDL");
@@ -601,74 +579,75 @@ public class EdgeConvertGUI {
    }
    
    private void setCurrentDTTable(String selText) {
-      for (int tIndex = 0; tIndex < tables.length; tIndex++) {
-         if (selText.equals(tables[tIndex].getName())) {
-            currentDTTable = tables[tIndex];
+      for (EdgeTable table : tables) {
+         if (selText.equals(table.getName())) {
+            currentDTTable = table;
             return;
          }
       }
    }
 
    private void setCurrentDTField(String selText) {
-      for (int fIndex = 0; fIndex < fields.length; fIndex++) {
-         if (selText.equals(fields[fIndex].getName()) && fields[fIndex].getTableID() == currentDTTable.getNumFigure()) {
-            currentDTField = fields[fIndex];
+      for (EdgeField field : fields) {
+         if (selText.equals(field.getName()) &&
+                 field.getTableID() == currentDTTable.getNumFigure()) {
+            currentDTField = field;
             return;
          }
       }
    }
 
    private void setCurrentDRTable1(String selText) {
-      for (int tIndex = 0; tIndex < tables.length; tIndex++) {
-         if (selText.equals(tables[tIndex].getName())) {
-            currentDRTable1 = tables[tIndex];
+      for (EdgeTable table : tables) {
+         if (selText.equals(table.getName())) {
+            currentDRTable1 = table;
             return;
          }
       }
    }
 
    private void setCurrentDRTable2(String selText) {
-      for (int tIndex = 0; tIndex < tables.length; tIndex++) {
-         if (selText.equals(tables[tIndex].getName())) {
-            currentDRTable2 = tables[tIndex];
+      for (EdgeTable table : tables) {
+         if (selText.equals(table.getName())) {
+            currentDRTable2 = table;
             return;
          }
       }
    }
 
    private void setCurrentDRField1(String selText) {
-      for (int fIndex = 0; fIndex < fields.length; fIndex++) {
-         if (selText.equals(fields[fIndex].getName()) &&
-             fields[fIndex].getTableID() == currentDRTable1.getNumFigure()) {
-            currentDRField1 = fields[fIndex];
+      for (EdgeField field : fields) {
+         if (selText.equals(field.getName()) &&
+                 field.getTableID() == currentDRTable1.getNumFigure()) {
+            currentDRField1 = field;
             return;
          }
       }
    }
 
    private void setCurrentDRField2(String selText) {
-      for (int fIndex = 0; fIndex < fields.length; fIndex++) {
-         if (selText.equals(fields[fIndex].getName()) &&
-             fields[fIndex].getTableID() == currentDRTable2.getNumFigure()) {
-            currentDRField2 = fields[fIndex];
+      for (EdgeField field : fields) {
+         if (selText.equals(field.getName()) &&
+                 field.getTableID() == currentDRTable2.getNumFigure()) {
+            currentDRField2 = field;
             return;
          }
       }
    }
    
    private String getTableName(int numFigure) {
-      for (int tIndex = 0; tIndex < tables.length; tIndex++) {
-         if (tables[tIndex].getNumFigure() == numFigure) {
-            return tables[tIndex].getName();
+      for (EdgeTable table : tables) {
+         if (table.getNumFigure() == numFigure) {
+            return table.getName();
          }
       }
       return "";
    }
    
    private String getFieldName(int numFigure) {
-      for (int fIndex = 0; fIndex < fields.length; fIndex++) {
-         if (fields[fIndex].getNumFigure() == numFigure) {
-            return fields[fIndex].getName();
+      for (EdgeField field : fields) {
+         if (field.getNumFigure() == numFigure) {
+            return field.getName();
          }
       }
       return "";
@@ -722,10 +701,10 @@ public class EdgeConvertGUI {
          jfDR.setVisible(false);
          disableControls();
          depopulateLists();
-         for (int tIndex = 0; tIndex < tables.length; tIndex++) {
-            String tempName = tables[tIndex].getName();
+         for (EdgeTable table : tables) {
+            String tempName = table.getName();
             dlmDTTablesAll.addElement(tempName);
-            int[] relatedTables = tables[tIndex].getRelatedTablesArray();
+            int[] relatedTables = table.getRelatedTablesArray();
             if (relatedTables.length > 0) {
                dlmDRTablesRelations.addElement(tempName);
             }
@@ -769,13 +748,13 @@ public class EdgeConvertGUI {
             pw.println(EdgeConvertFileParser.SAVE_ID);
             //write the tables 
             pw.println("#Tables#");
-            for (int i = 0; i < tables.length; i++) {
-               pw.println(tables[i]);
+            for (EdgeTable table : tables) {
+               pw.println(table);
             }
             //write the fields
             pw.println("#Fields#");
-            for (int i = 0; i < fields.length; i++) {
-               pw.println(fields[i]);
+            for (EdgeField field : fields) {
+               pw.println(field);
             }
             //close the file
             pw.close();
@@ -788,9 +767,9 @@ public class EdgeConvertGUI {
 
    private void setOutputDir() {
       int returnVal;
-      outputDirOld = outputDir;
-      alSubclasses = new ArrayList();
-      alProductNames = new ArrayList();
+      File outputDirOld = outputDir;
+      alSubclasses = new ArrayList<>();
+      alProductNames = new ArrayList<>();
 
       returnVal = jfcOutputDir.showOpenDialog(null);
       
@@ -804,7 +783,7 @@ public class EdgeConvertGUI {
       
       getOutputClasses();
 
-      if (alProductNames.size() == 0) {
+      if (alProductNames.isEmpty()) {
          JOptionPane.showMessageDialog(null, "The path:\n" + outputDir + "\ncontains no valid output definition files.");
          outputDir = outputDirOld;
          return;
@@ -821,19 +800,19 @@ public class EdgeConvertGUI {
    }
    
    private String displayProductNames() {
-      StringBuffer sb = new StringBuffer();
-      for (int i = 0; i < productNames.length; i++) {
-         sb.append(productNames[i] + "\n");
+      StringBuilder sb = new StringBuilder();
+      for (String productName : productNames) {
+         sb.append(productName).append('\n');
       }
       return sb.toString();
    }
    
    private void getOutputClasses() {
       File[] resultFiles;
-      Class resultClass = null;
-      Class[] paramTypes = {EdgeTable[].class, EdgeField[].class};
-      Class[] paramTypesNull = {};
-      Constructor conResultClass;
+      Class<?> resultClass = null;
+      Class<?>[] paramTypes = {EdgeTable[].class, EdgeField[].class};
+      Class<?>[] paramTypesNull = {};
+      Constructor<?> conResultClass;
       Object[] args = {tables, fields};
       Object objOutput = null;
 
@@ -841,25 +820,26 @@ public class EdgeConvertGUI {
       alProductNames.clear();
       alSubclasses.clear();
       try {
-         for (int i = 0; i < resultFiles.length; i++) {
-         System.out.println(resultFiles[i].getName());
-            if (!resultFiles[i].getName().endsWith(".class")) {
-               continue; //ignore all files that are not .class files
-            }
-            resultClass = Class.forName(resultFiles[i].getName().substring(0, resultFiles[i].getName().lastIndexOf(".")));
-            if (resultClass.getSuperclass().getName().equals("EdgeConvertCreateDDL")) { //only interested in classes that extend EdgeConvertCreateDDL
-               if (parseFile == null && saveFile == null) {
-                  conResultClass = resultClass.getConstructor(paramTypesNull);
+          for (File resultFile : resultFiles) {
+             final String resultFileName = resultFile.getName();
+             System.out.println(resultFileName);
+              if (!resultFileName.endsWith(".class")) {
+                  continue; //ignore all files that are not .class files
+              }
+              resultClass = Class.forName(resultFileName.substring(0, resultFileName.lastIndexOf(".")));
+              if (resultClass.getSuperclass().getName().equals("EdgeConvertCreateDDL")) { //only interested in classes that extend EdgeConvertCreateDDL
+                  if (parseFile == null && saveFile == null) {
+                      conResultClass = resultClass.getConstructor(paramTypesNull);
                   } else {
-                  conResultClass = resultClass.getConstructor(paramTypes);
-                  objOutput = conResultClass.newInstance(args);
-               }
-               alSubclasses.add(objOutput);
-               Method getProductName = resultClass.getMethod("getProductName", null);
-               String productName = (String)getProductName.invoke(objOutput, null);
-               alProductNames.add(productName);
-            }
-         }
+                      conResultClass = resultClass.getConstructor(paramTypes);
+                      objOutput = conResultClass.newInstance(args);
+                  }
+                  alSubclasses.add(objOutput);
+                  Method getProductName = resultClass.getMethod("getProductName", null);
+                  String productName = (String) getProductName.invoke(objOutput, null);
+                  alProductNames.add(productName);
+              }
+          }
       } catch (InstantiationException ie) {
          ie.printStackTrace();
       } catch (ClassNotFoundException cnfe) {
@@ -871,9 +851,9 @@ public class EdgeConvertGUI {
       } catch (InvocationTargetException ite) {
          ite.printStackTrace();
       }
-      if (alProductNames.size() > 0 && alSubclasses.size() > 0) { //do not recreate productName and objSubClasses arrays if the new path is empty of valid files
-         productNames = (String[])alProductNames.toArray(new String[alProductNames.size()]);
-         objSubclasses = (Object[])alSubclasses.toArray(new Object[alSubclasses.size()]);
+      if (!alProductNames.isEmpty() && !alSubclasses.isEmpty()) { //do not recreate productName and objSubClasses arrays if the new path is empty of valid files
+         productNames = alProductNames.toArray(new String[0]);
+         objSubclasses = alSubclasses.toArray(new Object[0]);
       }
    }
    
@@ -900,7 +880,7 @@ public class EdgeConvertGUI {
       }
 
       try {
-         Class selectedSubclass = objSubclasses[selected].getClass();
+         Class<?> selectedSubclass = objSubclasses[selected].getClass();
          Method getSQLString = selectedSubclass.getMethod("getSQLString", null);
          Method getDatabaseName = selectedSubclass.getMethod("getDatabaseName", null);
          strSQLString = (String)getSQLString.invoke(objSubclasses[selected], null);
@@ -918,13 +898,12 @@ public class EdgeConvertGUI {
 
    private void writeSQL(String output) {
       jfcEdge.resetChoosableFileFilters();
-      String str;
-      if (parseFile != null) {
-         outputFile = new File(parseFile.getAbsolutePath().substring(0, (parseFile.getAbsolutePath().lastIndexOf(File.separator) + 1)) + databaseName + ".sql");
-      } else {
-         outputFile = new File(saveFile.getAbsolutePath().substring(0, (saveFile.getAbsolutePath().lastIndexOf(File.separator) + 1)) + databaseName + ".sql");
-      }
-      if (databaseName.equals("")) {
+      File fileToUse = parseFile != null ? parseFile : saveFile;
+      String prefix = fileToUse.getAbsolutePath().substring(
+              0,
+              (fileToUse.getAbsolutePath().lastIndexOf(File.separator) + 1));
+      File outputFile = new File(prefix + databaseName + ".sql");
+      if (databaseName.isEmpty()) {
          return;
       }
       jfcEdge.setSelectedFile(outputFile);
@@ -1136,7 +1115,7 @@ public class EdgeConvertGUI {
             setOutputDir();
          }
          getOutputClasses(); //in case outputDir was set before a file was loaded and EdgeTable/EdgeField objects created
-         sqlString = getSQLStatements();
+         final String sqlString = getSQLStatements();
          if (sqlString.equals(EdgeConvertGUI.CANCELLED)) {
             return;
          }
