@@ -25,10 +25,7 @@ public class EdgeConvertGUI {
    EdgeRadioButtonListener radioListener;
    EdgeWindowListener edgeWindowListener;
    CreateDDLButtonListener createDDLListener;
-   private EdgeTable[] tables; //master copy of EdgeTable objects
-   private EdgeField[] fields; //master copy of EdgeField objects
-   private EdgeTable currentDTTable, currentDRTable1, currentDRTable2; //pointers to currently selected table(s) on Define Tables (DT) and Define Relations (DR) screens
-   private EdgeField currentDTField, currentDRField1, currentDRField2; //pointers to currently selected field(s) on Define Tables (DT) and Define Relations (DR) screens
+   EdgeConvertModel ecModel;
    private static boolean readSuccess = true; //this tells GUI whether to populate JList components or not
    private boolean dataSaved = true;
    private ArrayList<Object> alSubclasses;
@@ -70,6 +67,7 @@ public class EdgeConvertGUI {
       radioListener = new EdgeRadioButtonListener();
       edgeWindowListener = new EdgeWindowListener();
       createDDLListener = new CreateDDLButtonListener();
+      ecModel = new EdgeConvertModel();
       this.showGUI();
    } // EdgeConvertGUI.EdgeConvertGUI()
    
@@ -180,14 +178,14 @@ public class EdgeConvertGUI {
                  int selIndex = jlDTTablesAll.getSelectedIndex();
                  if (selIndex >= 0) {
                     String selText = dlmDTTablesAll.getElementAt(selIndex);
-                    setCurrentDTTable(selText); //set pointer to the selected table
-                    int[] currentNativeFields = currentDTTable.getNativeFieldsArray();
+                    ecModel.setCurrentDTTable(selText); //set pointer to the selected table
+                    int[] currentNativeFields = ecModel.currentDTTable.getNativeFieldsArray();
                     jlDTFieldsTablesAll.clearSelection();
                     dlmDTFieldsTablesAll.removeAllElements();
                     jbDTMoveUp.setEnabled(false);
                     jbDTMoveDown.setEnabled(false);
                     for (int currentNativeField : currentNativeFields) {
-                       dlmDTFieldsTablesAll.addElement(getFieldName(currentNativeField));
+                       dlmDTFieldsTablesAll.addElement(ecModel.getFieldName(currentNativeField));
                     }
                  }
                  disableControls();
@@ -211,19 +209,19 @@ public class EdgeConvertGUI {
                        jbDTMoveDown.setEnabled(true);
                     }
                     String selText = dlmDTFieldsTablesAll.getElementAt(selIndex);
-                    setCurrentDTField(selText); //set pointer to the selected field
+                    ecModel.setCurrentDTField(selText); //set pointer to the selected field
                     enableControls();
-                    jrbDataType[currentDTField.getDataType()].setSelected(true); //select the appropriate radio button, based on value of dataType
+                    jrbDataType[ecModel.currentDTField.getDataType()].setSelected(true); //select the appropriate radio button, based on value of dataType
                     if (jrbDataType[0].isSelected()) { //this is the Varchar radio button
                        jbDTVarchar.setEnabled(true); //enable the Varchar button
-                       jtfDTVarchar.setText(Integer.toString(currentDTField.getVarcharValue())); //fill text field with varcharValue
+                       jtfDTVarchar.setText(Integer.toString(ecModel.currentDTField.getVarcharValue())); //fill text field with varcharValue
                     } else { //some radio button other than Varchar is selected
                        jtfDTVarchar.setText(""); //clear the text field
                        jbDTVarchar.setEnabled(false); //disable the button
                     }
-                    jcheckDTPrimaryKey.setSelected(currentDTField.getIsPrimaryKey()); //clear or set Primary Key checkbox
-                    jcheckDTDisallowNull.setSelected(currentDTField.getDisallowNull()); //clear or set Disallow Null checkbox
-                    jtfDTDefaultValue.setText(currentDTField.getDefaultValue()); //fill text field with defaultValue
+                    jcheckDTPrimaryKey.setSelected(ecModel.currentDTField.getIsPrimaryKey()); //clear or set Primary Key checkbox
+                    jcheckDTDisallowNull.setSelected(ecModel.currentDTField.getDisallowNull()); //clear or set Disallow Null checkbox
+                    jtfDTDefaultValue.setText(ecModel.currentDTField.getDefaultValue()); //fill text field with defaultValue
                  }
               }
       );
@@ -234,13 +232,13 @@ public class EdgeConvertGUI {
       jbDTMoveUp.addActionListener(
               (ActionEvent ae) -> {
                  int selection = jlDTFieldsTablesAll.getSelectedIndex();
-                 currentDTTable.moveFieldUp(selection);
+                 ecModel.currentDTTable.moveFieldUp(selection);
                  //repopulate Fields List
-                 int[] currentNativeFields = currentDTTable.getNativeFieldsArray();
+                 int[] currentNativeFields = ecModel.currentDTTable.getNativeFieldsArray();
                  jlDTFieldsTablesAll.clearSelection();
                  dlmDTFieldsTablesAll.removeAllElements();
                  for (int currentNativeField : currentNativeFields) {
-                    dlmDTFieldsTablesAll.addElement(getFieldName(currentNativeField));
+                    dlmDTFieldsTablesAll.addElement(ecModel.getFieldName(currentNativeField));
                  }
                  jlDTFieldsTablesAll.setSelectedIndex(selection - 1);
                  dataSaved = false;
@@ -251,13 +249,13 @@ public class EdgeConvertGUI {
       jbDTMoveDown.addActionListener(
               (ActionEvent ae) -> {
                  int selection = jlDTFieldsTablesAll.getSelectedIndex(); //the original selected index
-                 currentDTTable.moveFieldDown(selection);
+                 ecModel.currentDTTable.moveFieldDown(selection);
                  //repopulate Fields List
-                 int[] currentNativeFields = currentDTTable.getNativeFieldsArray();
+                 int[] currentNativeFields = ecModel.currentDTTable.getNativeFieldsArray();
                  jlDTFieldsTablesAll.clearSelection();
                  dlmDTFieldsTablesAll.removeAllElements();
                  for (int currentNativeField : currentNativeFields) {
-                    dlmDTFieldsTablesAll.addElement(getFieldName(currentNativeField));
+                    dlmDTFieldsTablesAll.addElement(ecModel.getFieldName(currentNativeField));
                  }
                  jlDTFieldsTablesAll.setSelectedIndex(selection + 1);
                  dataSaved = false;
@@ -400,10 +398,10 @@ public class EdgeConvertGUI {
                  int selIndex = jlDRTablesRelations.getSelectedIndex();
                  if (selIndex >= 0) {
                     String selText = dlmDRTablesRelations.getElementAt(selIndex);
-                    setCurrentDRTable1(selText);
+                    ecModel.setCurrentDRTable1(selText);
                     int[] currentNativeFields, currentRelatedTables, currentRelatedFields;
-                    currentNativeFields = currentDRTable1.getNativeFieldsArray();
-                    currentRelatedTables = currentDRTable1.getRelatedTablesArray();
+                    currentNativeFields = ecModel.currentDRTable1.getNativeFieldsArray();
+                    currentRelatedTables = ecModel.currentDRTable1.getRelatedTablesArray();
                     jlDRFieldsTablesRelations.clearSelection();
                     jlDRTablesRelatedTo.clearSelection();
                     jlDRFieldsTablesRelatedTo.clearSelection();
@@ -411,10 +409,10 @@ public class EdgeConvertGUI {
                     dlmDRTablesRelatedTo.removeAllElements();
                     dlmDRFieldsTablesRelatedTo.removeAllElements();
                     for (int currentNativeField : currentNativeFields) {
-                       dlmDRFieldsTablesRelations.addElement(getFieldName(currentNativeField));
+                       dlmDRFieldsTablesRelations.addElement(ecModel.getFieldName(currentNativeField));
                     }
                     for (int currentRelatedTable : currentRelatedTables) {
-                       dlmDRTablesRelatedTo.addElement(getTableName(currentRelatedTable));
+                       dlmDRTablesRelatedTo.addElement(ecModel.getTableName(currentRelatedTable));
                     }
                  }
               }
@@ -427,14 +425,14 @@ public class EdgeConvertGUI {
                  int selIndex = jlDRFieldsTablesRelations.getSelectedIndex();
                  if (selIndex >= 0) {
                     String selText = dlmDRFieldsTablesRelations.getElementAt(selIndex);
-                    setCurrentDRField1(selText);
-                    if (currentDRField1.getFieldBound() == 0) {
+                    ecModel.setCurrentDRField1(selText);
+                    if (ecModel.currentDRField1.getFieldBound() == 0) {
                        jlDRTablesRelatedTo.clearSelection();
                        jlDRFieldsTablesRelatedTo.clearSelection();
                        dlmDRFieldsTablesRelatedTo.removeAllElements();
                     } else {
-                       jlDRTablesRelatedTo.setSelectedValue(getTableName(currentDRField1.getTableBound()), true);
-                       jlDRFieldsTablesRelatedTo.setSelectedValue(getFieldName(currentDRField1.getFieldBound()), true);
+                       jlDRTablesRelatedTo.setSelectedValue(ecModel.getTableName(ecModel.currentDRField1.getTableBound()), true);
+                       jlDRFieldsTablesRelatedTo.setSelectedValue(ecModel.getFieldName(ecModel.currentDRField1.getFieldBound()), true);
                     }
                  }
               }
@@ -447,11 +445,11 @@ public class EdgeConvertGUI {
                  int selIndex = jlDRTablesRelatedTo.getSelectedIndex();
                  if (selIndex >= 0) {
                     String selText = dlmDRTablesRelatedTo.getElementAt(selIndex);
-                    setCurrentDRTable2(selText);
-                    int[] currentNativeFields = currentDRTable2.getNativeFieldsArray();
+                    ecModel.setCurrentDRTable2(selText);
+                    int[] currentNativeFields = ecModel.currentDRTable2.getNativeFieldsArray();
                     dlmDRFieldsTablesRelatedTo.removeAllElements();
                     for (int currentNativeField : currentNativeFields) {
-                       dlmDRFieldsTablesRelatedTo.addElement(getFieldName(currentNativeField));
+                       dlmDRFieldsTablesRelatedTo.addElement(ecModel.getFieldName(currentNativeField));
                     }
                  }
               }
@@ -464,7 +462,7 @@ public class EdgeConvertGUI {
                  int selIndex = jlDRFieldsTablesRelatedTo.getSelectedIndex();
                  if (selIndex >= 0) {
                     String selText = dlmDRFieldsTablesRelatedTo.getElementAt(selIndex);
-                    setCurrentDRField2(selText);
+                    ecModel.setCurrentDRField2(selText);
                     jbDRBindRelation.setEnabled(true);
                  } else {
                     jbDRBindRelation.setEnabled(false);
@@ -511,49 +509,49 @@ public class EdgeConvertGUI {
       jbDRBindRelation.addActionListener(
               (ActionEvent ae) -> {
                  int nativeIndex = jlDRFieldsTablesRelations.getSelectedIndex();
-                 int relatedField = currentDRField2.getNumFigure();
-                 if (currentDRField1.getFieldBound() == relatedField) { //the selected fields are already bound to each other
+                 int relatedField = ecModel.currentDRField2.getNumFigure();
+                 if (ecModel.currentDRField1.getFieldBound() == relatedField) { //the selected fields are already bound to each other
                     int answer = JOptionPane.showConfirmDialog(null, "Do you wish to unbind the relation on field " +
-                                                               currentDRField1.getName() + "?",
+                                                               ecModel.currentDRField1.getName() + "?",
                                                                "Are you sure?", JOptionPane.YES_NO_OPTION);
                     if (answer == JOptionPane.YES_OPTION) {
-                       currentDRTable1.setRelatedField(nativeIndex, 0); //clear the related field
-                       currentDRField1.setTableBound(0); //clear the bound table
-                       currentDRField1.setFieldBound(0); //clear the bound field
+                       ecModel.currentDRTable1.setRelatedField(nativeIndex, 0); //clear the related field
+                       ecModel.currentDRField1.setTableBound(0); //clear the bound table
+                       ecModel.currentDRField1.setFieldBound(0); //clear the bound field
                        jlDRFieldsTablesRelatedTo.clearSelection(); //clear the listbox selection
                     }
                     return;
                  }
-                 if (currentDRField1.getFieldBound() != 0) { //field is already bound to a different field
+                 if (ecModel.currentDRField1.getFieldBound() != 0) { //field is already bound to a different field
                     int answer = JOptionPane.showConfirmDialog(null, "There is already a relation defined on field " +
-                                                               currentDRField1.getName() + ", do you wish to overwrite it?",
+                                                               ecModel.currentDRField1.getName() + ", do you wish to overwrite it?",
                                                                "Are you sure?", JOptionPane.YES_NO_OPTION);
                     if (answer == JOptionPane.NO_OPTION || answer == JOptionPane.CLOSED_OPTION) {
-                       jlDRTablesRelatedTo.setSelectedValue(getTableName(currentDRField1.getTableBound()), true); //revert selections to saved settings
-                       jlDRFieldsTablesRelatedTo.setSelectedValue(getFieldName(currentDRField1.getFieldBound()), true); //revert selections to saved settings
+                       jlDRTablesRelatedTo.setSelectedValue(ecModel.getTableName(ecModel.currentDRField1.getTableBound()), true); //revert selections to saved settings
+                       jlDRFieldsTablesRelatedTo.setSelectedValue(ecModel.getFieldName(ecModel.currentDRField1.getFieldBound()), true); //revert selections to saved settings
                        return;
                     }
                  }
-                 if (currentDRField1.getDataType() != currentDRField2.getDataType()) {
-                    JOptionPane.showMessageDialog(null, "The datatypes of " + currentDRTable1.getName() + "." +
-                                                  currentDRField1.getName() + " and " + currentDRTable2.getName() +
-                                                  "." + currentDRField2.getName() + " do not match.  Unable to bind this relation.");
+                 if (ecModel.currentDRField1.getDataType() != ecModel.currentDRField2.getDataType()) {
+                    JOptionPane.showMessageDialog(null, "The datatypes of " + ecModel.currentDRTable1.getName() + "." +
+                                                  ecModel.currentDRField1.getName() + " and " + ecModel.currentDRTable2.getName() +
+                                                  "." + ecModel.currentDRField2.getName() + " do not match.  Unable to bind this relation.");
                     return;
                  }
-                 if ((currentDRField1.getDataType() == 0) && (currentDRField2.getDataType() == 0)) {
-                    if (currentDRField1.getVarcharValue() != currentDRField2.getVarcharValue()) {
-                       JOptionPane.showMessageDialog(null, "The varchar lengths of " + currentDRTable1.getName() + "." +
-                                                     currentDRField1.getName() + " and " + currentDRTable2.getName() +
-                                                     "." + currentDRField2.getName() + " do not match.  Unable to bind this relation.");
+                 if ((ecModel.currentDRField1.getDataType() == 0) && (ecModel.currentDRField2.getDataType() == 0)) {
+                    if (ecModel.currentDRField1.getVarcharValue() != ecModel.currentDRField2.getVarcharValue()) {
+                       JOptionPane.showMessageDialog(null, "The varchar lengths of " + ecModel.currentDRTable1.getName() + "." +
+                                                     ecModel.currentDRField1.getName() + " and " + ecModel.currentDRTable2.getName() +
+                                                     "." + ecModel.currentDRField2.getName() + " do not match.  Unable to bind this relation.");
                        return;
                     }
                  }
-                 currentDRTable1.setRelatedField(nativeIndex, relatedField);
-                 currentDRField1.setTableBound(currentDRTable2.getNumFigure());
-                 currentDRField1.setFieldBound(currentDRField2.getNumFigure());
-                 JOptionPane.showMessageDialog(null, "Table " + currentDRTable1.getName() + ": native field " +
-                                               currentDRField1.getName() + " bound to table " + currentDRTable2.getName() +
-                                               " on field " + currentDRField2.getName());
+                 ecModel.currentDRTable1.setRelatedField(nativeIndex, relatedField);
+                 ecModel.currentDRField1.setTableBound(ecModel.currentDRTable2.getNumFigure());
+                 ecModel.currentDRField1.setFieldBound(ecModel.currentDRField2.getNumFigure());
+                 JOptionPane.showMessageDialog(null, "Table " + ecModel.currentDRTable1.getName() + ": native field " +
+                                               ecModel.currentDRField1.getName() + " bound to table " + ecModel.currentDRTable2.getName() +
+                                               " on field " + ecModel.currentDRField2.getName());
                  dataSaved = false;
               }
       );
@@ -575,82 +573,7 @@ public class EdgeConvertGUI {
    public static boolean getReadSuccess() {
       return readSuccess;
    }
-   
-   private void setCurrentDTTable(String selText) {
-      for (EdgeTable table : tables) {
-         if (selText.equals(table.getName())) {
-            currentDTTable = table;
-            return;
-         }
-      }
-   }
 
-   private void setCurrentDTField(String selText) {
-      for (EdgeField field : fields) {
-         if (selText.equals(field.getName()) &&
-                 field.getTableID() == currentDTTable.getNumFigure()) {
-            currentDTField = field;
-            return;
-         }
-      }
-   }
-
-   private void setCurrentDRTable1(String selText) {
-      for (EdgeTable table : tables) {
-         if (selText.equals(table.getName())) {
-            currentDRTable1 = table;
-            return;
-         }
-      }
-   }
-
-   private void setCurrentDRTable2(String selText) {
-      for (EdgeTable table : tables) {
-         if (selText.equals(table.getName())) {
-            currentDRTable2 = table;
-            return;
-         }
-      }
-   }
-
-   private void setCurrentDRField1(String selText) {
-      for (EdgeField field : fields) {
-         if (selText.equals(field.getName()) &&
-                 field.getTableID() == currentDRTable1.getNumFigure()) {
-            currentDRField1 = field;
-            return;
-         }
-      }
-   }
-
-   private void setCurrentDRField2(String selText) {
-      for (EdgeField field : fields) {
-         if (selText.equals(field.getName()) &&
-                 field.getTableID() == currentDRTable2.getNumFigure()) {
-            currentDRField2 = field;
-            return;
-         }
-      }
-   }
-   
-   private String getTableName(int numFigure) {
-      for (EdgeTable table : tables) {
-         if (table.getNumFigure() == numFigure) {
-            return table.getName();
-         }
-      }
-      return "";
-   }
-   
-   private String getFieldName(int numFigure) {
-      for (EdgeField field : fields) {
-         if (field.getNumFigure() == numFigure) {
-            return field.getName();
-         }
-      }
-      return "";
-   }
-   
    private void enableControls() {
       for (int i = 0; i < strDataType.length; i++) {
          jrbDataType[i].setEnabled(true);
@@ -699,7 +622,7 @@ public class EdgeConvertGUI {
          jfDR.setVisible(false);
          disableControls();
          depopulateLists();
-         for (EdgeTable table : tables) {
+         for (EdgeTable table : ecModel.tables) {
             String tempName = table.getName();
             dlmDTTablesAll.addElement(tempName);
             int[] relatedTables = table.getRelatedTablesArray();
@@ -739,28 +662,11 @@ public class EdgeConvertGUI {
    }
    
    private void writeSave() {
-      if (saveFile != null) {
-         try {
-            PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(saveFile, false)));
-            //write the identification line
-            pw.println(EdgeConvertFileParser.SAVE_ID);
-            //write the tables 
-            pw.println("#Tables#");
-            for (EdgeTable table : tables) {
-               pw.println(table);
-            }
-            //write the fields
-            pw.println("#Fields#");
-            for (EdgeField field : fields) {
-               pw.println(field);
-            }
-            //close the file
-            pw.close();
-         } catch (IOException ioe) {
-            System.out.println(ioe);
-         }
-         dataSaved = true;
+      if (saveFile == null) {
+         return;
       }
+      ecModel.writeSave(saveFile);
+      dataSaved = true;
    }
 
    private void setOutputDir() {
@@ -811,7 +717,7 @@ public class EdgeConvertGUI {
       Class<?>[] paramTypes = {EdgeTable[].class, EdgeField[].class};
       Class<?>[] paramTypesNull = {};
       Constructor<?> conResultClass;
-      Object[] args = {tables, fields};
+      Object[] args = {ecModel.tables, ecModel.fields};
       Object objOutput = null;
 
       resultFiles = outputDir.listFiles();
@@ -922,19 +828,19 @@ public class EdgeConvertGUI {
    }
 
    private void onDisallowNullItemStateChanged(ItemEvent ie) {
-      currentDTField.setDisallowNull(jcheckDTDisallowNull.isSelected());
+      ecModel.currentDTField.setDisallowNull(jcheckDTDisallowNull.isSelected());
       dataSaved = false;
    }
 
    private void onPrimaryKeyItemStateChanged(ItemEvent ie) {
-      currentDTField.setIsPrimaryKey(jcheckDTPrimaryKey.isSelected());
+      ecModel.currentDTField.setIsPrimaryKey(jcheckDTPrimaryKey.isSelected());
       dataSaved = false;
    }
 
    private void onSetDefaultValueActionPerformed(ActionEvent ae) {
       String prev = jtfDTDefaultValue.getText();
       boolean goodData = false;
-      int i = currentDTField.getDataType();
+      int i = ecModel.currentDTField.getDataType();
       do {
          String result = (String) JOptionPane.showInputDialog(
                  null,
@@ -998,8 +904,8 @@ public class EdgeConvertGUI {
       int selIndex = jlDTFieldsTablesAll.getSelectedIndex();
       if (selIndex >= 0) {
          String selText = dlmDTFieldsTablesAll.getElementAt(selIndex);
-         setCurrentDTField(selText);
-         currentDTField.setDefaultValue(jtfDTDefaultValue.getText());
+         ecModel.setCurrentDTField(selText);
+         ecModel.currentDTField.setDefaultValue(jtfDTDefaultValue.getText());
       }
       dataSaved = false;
    }
@@ -1029,7 +935,7 @@ public class EdgeConvertGUI {
          varchar = Integer.parseInt(result);
          if (varchar > 0 && varchar <= 65535) { // max length of varchar is 255 before v5.0.3
             jtfDTVarchar.setText(Integer.toString(varchar));
-            currentDTField.setVarcharValue(varchar);
+            ecModel.currentDTField.setVarcharValue(varchar);
          } else {
             JOptionPane.showMessageDialog(null, "Varchar length must be greater than 0 and less than or equal to 65535.");
             jtfDTVarchar.setText(Integer.toString(EdgeField.VARCHAR_DEFAULT_LENGTH));
@@ -1047,7 +953,7 @@ public class EdgeConvertGUI {
       public void actionPerformed(ActionEvent ae) {
          for (int i = 0; i < jrbDataType.length; i++) {
             if (jrbDataType[i].isSelected()) {
-               currentDTField.setDataType(i);
+               ecModel.currentDTField.setDataType(i);
                break;
             }
          }
@@ -1059,7 +965,7 @@ public class EdgeConvertGUI {
             jbDTVarchar.setEnabled(false);
          }
          jtfDTDefaultValue.setText("");
-         currentDTField.setDefaultValue("");
+         ecModel.currentDTField.setDefaultValue("");
          dataSaved = false;
       }
    }
@@ -1178,11 +1084,11 @@ public class EdgeConvertGUI {
       parseFile = optParseFile.get();
 
       EdgeConvertFileParser ecfp = new EdgeConvertFileParser(parseFile);
-      tables = ecfp.getEdgeTables();
-      for (EdgeTable table : tables) {
+      ecModel.tables = ecfp.getEdgeTables();
+      for (EdgeTable table : ecModel.tables) {
          table.makeArrays();
       }
-      fields = ecfp.getEdgeFields();
+      ecModel.fields = ecfp.getEdgeFields();
       populateLists();
       saveFile = null;
       jmiDTSave.setEnabled(false);
@@ -1208,8 +1114,8 @@ public class EdgeConvertGUI {
       saveFile = optSaveFile.get();
 
       EdgeConvertFileParser ecfp = new EdgeConvertFileParser(saveFile);
-      tables = ecfp.getEdgeTables();
-      fields = ecfp.getEdgeFields();
+      ecModel.tables = ecfp.getEdgeTables();
+      ecModel.fields = ecfp.getEdgeFields();
       populateLists();
       parseFile = null;
       jmiDTSave.setEnabled(true);
