@@ -49,8 +49,8 @@ public class EdgeConvertGUI {
    static JTextField jtfDTVarchar, jtfDTDefaultValue;
    static JLabel jlabDTTables, jlabDTFields;
    static JScrollPane jspDTTablesAll, jspDTFieldsTablesAll;
-   static JList jlDTTablesAll, jlDTFieldsTablesAll;
-   static DefaultListModel dlmDTTablesAll, dlmDTFieldsTablesAll;
+   static JList<String> jlDTTablesAll, jlDTFieldsTablesAll;
+   static DefaultListModel<String> dlmDTTablesAll, dlmDTFieldsTablesAll;
    static JMenuBar jmbDTMenuBar;
    static JMenu jmDTFile, jmDTOptions, jmDTHelp;
    static JMenuItem jmiDTOpenEdge, jmiDTOpenSave, jmiDTSave, jmiDTSaveAs, jmiDTExit, jmiDTOptionsOutputLocation, jmiDTOptionsShowProducts, jmiDTHelpAbout;
@@ -59,8 +59,8 @@ public class EdgeConvertGUI {
    static JFrame jfDR;
    static JPanel jpDRBottom, jpDRCenter, jpDRCenter1, jpDRCenter2, jpDRCenter3, jpDRCenter4;
    static JButton jbDRCreateDDL, jbDRDefineTables, jbDRBindRelation;
-   static JList jlDRTablesRelations, jlDRTablesRelatedTo, jlDRFieldsTablesRelations, jlDRFieldsTablesRelatedTo;
-   static DefaultListModel dlmDRTablesRelations, dlmDRTablesRelatedTo, dlmDRFieldsTablesRelations, dlmDRFieldsTablesRelatedTo;
+   static JList<String> jlDRTablesRelations, jlDRTablesRelatedTo, jlDRFieldsTablesRelations, jlDRFieldsTablesRelatedTo;
+   static DefaultListModel<String> dlmDRTablesRelations, dlmDRTablesRelatedTo, dlmDRFieldsTablesRelations, dlmDRFieldsTablesRelatedTo;
    static JLabel jlabDRTablesRelations, jlabDRTablesRelatedTo, jlabDRFieldsTablesRelations, jlabDRFieldsTablesRelatedTo;
    static JScrollPane jspDRTablesRelations, jspDRTablesRelatedTo, jspDRFieldsTablesRelations, jspDRFieldsTablesRelatedTo;
    static JMenuBar jmbDRMenuBar;
@@ -177,14 +177,14 @@ public class EdgeConvertGUI {
       
       jpDTCenter = new JPanel(new GridLayout(1, 3));
       jpDTCenterRight = new JPanel(new GridLayout(1, 2));
-      dlmDTTablesAll = new DefaultListModel();
-      jlDTTablesAll = new JList(dlmDTTablesAll);
+      dlmDTTablesAll = new DefaultListModel<>();
+      jlDTTablesAll = new JList<>(dlmDTTablesAll);
       jlDTTablesAll.addListSelectionListener(
          new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent lse)  {
                int selIndex = jlDTTablesAll.getSelectedIndex();
                if (selIndex >= 0) {
-                  String selText = dlmDTTablesAll.getElementAt(selIndex).toString();
+                  String selText = dlmDTTablesAll.getElementAt(selIndex);
                   setCurrentDTTable(selText); //set pointer to the selected table
                   int[] currentNativeFields = currentDTTable.getNativeFieldsArray();
                   jlDTFieldsTablesAll.clearSelection();
@@ -200,8 +200,8 @@ public class EdgeConvertGUI {
          }
       );
       
-      dlmDTFieldsTablesAll = new DefaultListModel();
-      jlDTFieldsTablesAll = new JList(dlmDTFieldsTablesAll);
+      dlmDTFieldsTablesAll = new DefaultListModel<>();
+      jlDTFieldsTablesAll = new JList<>(dlmDTFieldsTablesAll);
       jlDTFieldsTablesAll.addListSelectionListener(
          new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent lse) {
@@ -217,7 +217,7 @@ public class EdgeConvertGUI {
                   } else {
                      jbDTMoveDown.setEnabled(true);
                   }
-                  String selText = dlmDTFieldsTablesAll.getElementAt(selIndex).toString();
+                  String selText = dlmDTFieldsTablesAll.getElementAt(selIndex);
                   setCurrentDTField(selText); //set pointer to the selected field
                   enableControls();
                   jrbDataType[currentDTField.getDataType()].setSelected(true); //select the appropriate radio button, based on value of dataType
@@ -405,14 +405,14 @@ public class EdgeConvertGUI {
       jpDRCenter3 = new JPanel(new BorderLayout());
       jpDRCenter4 = new JPanel(new BorderLayout());
 
-      dlmDRTablesRelations = new DefaultListModel();
-      jlDRTablesRelations = new JList(dlmDRTablesRelations);
+      dlmDRTablesRelations = new DefaultListModel<>();
+      jlDRTablesRelations = new JList<>(dlmDRTablesRelations);
       jlDRTablesRelations.addListSelectionListener(
          new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent lse)  {
                int selIndex = jlDRTablesRelations.getSelectedIndex();
                if (selIndex >= 0) {
-                  String selText = dlmDRTablesRelations.getElementAt(selIndex).toString();
+                  String selText = dlmDRTablesRelations.getElementAt(selIndex);
                   setCurrentDRTable1(selText);
                   int[] currentNativeFields, currentRelatedTables, currentRelatedFields;
                   currentNativeFields = currentDRTable1.getNativeFieldsArray();
@@ -434,14 +434,14 @@ public class EdgeConvertGUI {
          }
       );
 
-      dlmDRFieldsTablesRelations = new DefaultListModel();
-      jlDRFieldsTablesRelations = new JList(dlmDRFieldsTablesRelations);
+      dlmDRFieldsTablesRelations = new DefaultListModel<>();
+      jlDRFieldsTablesRelations = new JList<>(dlmDRFieldsTablesRelations);
       jlDRFieldsTablesRelations.addListSelectionListener(
          new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent lse)  {
                int selIndex = jlDRFieldsTablesRelations.getSelectedIndex();
                if (selIndex >= 0) {
-                  String selText = dlmDRFieldsTablesRelations.getElementAt(selIndex).toString();
+                  String selText = dlmDRFieldsTablesRelations.getElementAt(selIndex);
                   setCurrentDRField1(selText);
                   if (currentDRField1.getFieldBound() == 0) {
                      jlDRTablesRelatedTo.clearSelection();
@@ -456,14 +456,14 @@ public class EdgeConvertGUI {
          }
       );
 
-      dlmDRTablesRelatedTo = new DefaultListModel();
-      jlDRTablesRelatedTo = new JList(dlmDRTablesRelatedTo);
+      dlmDRTablesRelatedTo = new DefaultListModel<>();
+      jlDRTablesRelatedTo = new JList<>(dlmDRTablesRelatedTo);
       jlDRTablesRelatedTo.addListSelectionListener(
          new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent lse)  {
                int selIndex = jlDRTablesRelatedTo.getSelectedIndex();
                if (selIndex >= 0) {
-                  String selText = dlmDRTablesRelatedTo.getElementAt(selIndex).toString();
+                  String selText = dlmDRTablesRelatedTo.getElementAt(selIndex);
                   setCurrentDRTable2(selText);
                   int[] currentNativeFields = currentDRTable2.getNativeFieldsArray();
                   dlmDRFieldsTablesRelatedTo.removeAllElements();
@@ -475,14 +475,14 @@ public class EdgeConvertGUI {
          }
       );
 
-      dlmDRFieldsTablesRelatedTo = new DefaultListModel();
-      jlDRFieldsTablesRelatedTo = new JList(dlmDRFieldsTablesRelatedTo);
+      dlmDRFieldsTablesRelatedTo = new DefaultListModel<>();
+      jlDRFieldsTablesRelatedTo = new JList<>(dlmDRFieldsTablesRelatedTo);
       jlDRFieldsTablesRelatedTo.addListSelectionListener(
          new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent lse)  {
                int selIndex = jlDRFieldsTablesRelatedTo.getSelectedIndex();
                if (selIndex >= 0) {
-                  String selText = dlmDRFieldsTablesRelatedTo.getElementAt(selIndex).toString();
+                  String selText = dlmDRFieldsTablesRelatedTo.getElementAt(selIndex);
                   setCurrentDRField2(selText);
                   jbDRBindRelation.setEnabled(true);
                } else {
@@ -1026,7 +1026,7 @@ public class EdgeConvertGUI {
       } while (!goodData);
       int selIndex = jlDTFieldsTablesAll.getSelectedIndex();
       if (selIndex >= 0) {
-         String selText = dlmDTFieldsTablesAll.getElementAt(selIndex).toString();
+         String selText = dlmDTFieldsTablesAll.getElementAt(selIndex);
          setCurrentDTField(selText);
          currentDTField.setDefaultValue(jtfDTDefaultValue.getText());
       }
