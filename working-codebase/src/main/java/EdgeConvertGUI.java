@@ -1151,39 +1151,7 @@ public class EdgeConvertGUI {
          }
          
          if ((ae.getSource() == jmiDTOpenSave) || (ae.getSource() == jmiDROpenSave)) {
-            if (!dataSaved) {
-               int answer = JOptionPane.showConfirmDialog(null, "You currently have unsaved data. Continue?",
-                                                          "Are you sure?", JOptionPane.YES_NO_OPTION);
-               if (answer != JOptionPane.YES_OPTION) {
-                  return;
-               }
-            }
-            jfcEdge.addChoosableFileFilter(effSave);
-            int returnVal = jfcEdge.showOpenDialog(null);
-            if (returnVal == JFileChooser.APPROVE_OPTION) {
-               saveFile = jfcEdge.getSelectedFile();
-               ecfp = new EdgeConvertFileParser(saveFile);
-               tables = ecfp.getEdgeTables();
-               fields = ecfp.getEdgeFields();
-               ecfp = null;
-               populateLists();
-               parseFile = null;
-               jmiDTSave.setEnabled(true);
-               jmiDRSave.setEnabled(true);
-               jmiDTSaveAs.setEnabled(true);
-               jmiDRSaveAs.setEnabled(true);
-               jbDTDefineRelations.setEnabled(true);
-
-               jbDTCreateDDL.setEnabled(true);
-               jbDRCreateDDL.setEnabled(true);
-
-               truncatedFilename = saveFile.getName().substring(saveFile.getName().lastIndexOf(File.separator) + 1);
-               jfDT.setTitle(DEFINE_TABLES + " - " + truncatedFilename);
-               jfDR.setTitle(DEFINE_RELATIONS + " - " + truncatedFilename);
-            } else {
-               return;
-            }
-            dataSaved = true;
+            openSaveFile();
          }
          
          if ((ae.getSource() == jmiDTSaveAs) || (ae.getSource() == jmiDRSaveAs) ||
@@ -1262,6 +1230,34 @@ public class EdgeConvertGUI {
       dataSaved = true;
    }
 
+   private void openSaveFile() {
+      Optional<File> optSaveFile = showOpenSaveFile();
+      if (!optSaveFile.isPresent()) {
+         return;
+      }
+      saveFile = optSaveFile.get();
+
+      ecfp = new EdgeConvertFileParser(saveFile);
+      tables = ecfp.getEdgeTables();
+      fields = ecfp.getEdgeFields();
+      ecfp = null;
+      populateLists();
+      parseFile = null;
+      jmiDTSave.setEnabled(true);
+      jmiDRSave.setEnabled(true);
+      jmiDTSaveAs.setEnabled(true);
+      jmiDRSaveAs.setEnabled(true);
+      jbDTDefineRelations.setEnabled(true);
+
+      jbDTCreateDDL.setEnabled(true);
+      jbDRCreateDDL.setEnabled(true);
+
+      truncatedFilename = saveFile.getName().substring(saveFile.getName().lastIndexOf(File.separator) + 1);
+      jfDT.setTitle(DEFINE_TABLES + " - " + truncatedFilename);
+      jfDR.setTitle(DEFINE_RELATIONS + " - " + truncatedFilename);
+      dataSaved = true;
+   }
+
    protected Optional<File> showOpenEdgeFile() {
       if (!dataSaved) {
          int answer = JOptionPane.showConfirmDialog(null, "You currently have unsaved data. Continue?",
@@ -1271,6 +1267,22 @@ public class EdgeConvertGUI {
          }
       }
       jfcEdge.addChoosableFileFilter(effEdge);
+      int returnVal = jfcEdge.showOpenDialog(null);
+      if (returnVal != JFileChooser.APPROVE_OPTION) {
+         return Optional.empty();
+      }
+      return Optional.ofNullable(jfcEdge.getSelectedFile());
+   }
+
+   protected Optional<File> showOpenSaveFile() {
+      if (!dataSaved) {
+         int answer = JOptionPane.showConfirmDialog(null, "You currently have unsaved data. Continue?",
+                 "Are you sure?", JOptionPane.YES_NO_OPTION);
+         if (answer != JOptionPane.YES_OPTION) {
+            return Optional.empty();
+         }
+      }
+      jfcEdge.addChoosableFileFilter(effSave);
       int returnVal = jfcEdge.showOpenDialog(null);
       if (returnVal != JFileChooser.APPROVE_OPTION) {
          return Optional.empty();
