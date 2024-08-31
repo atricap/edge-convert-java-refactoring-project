@@ -257,20 +257,22 @@ public class EdgeConvertFileParser {
    
    public void openAndParse() {
       try {
-         BufferedReader br = new BufferedReader(new FileReader(parseFile));
-         //test for what kind of file we have
-         currentLine = br.readLine().trim();
-         if (currentLine.startsWith(EDGE_ID)) { //the file chosen is an Edge Diagrammer file
-            this.parseEdgeFile(br); //parse the file
-            br.close();
-            this.makeArrays(); //convert ArrayList objects into arrays of the appropriate Class type
+         boolean isEdgeFile;
+         try (BufferedReader br = new BufferedReader(new FileReader(parseFile))) {
+            //test for what kind of file we have
+            currentLine = br.readLine().trim();
+            isEdgeFile = currentLine.startsWith(EDGE_ID); //the file chosen is an Edge Diagrammer file
+            boolean isSaveFile = currentLine.startsWith(SAVE_ID); //the file chosen is a Save file created by this application
+            if (!isEdgeFile && !isSaveFile) { //the file chosen is something else
+               JOptionPane.showMessageDialog(null, "Unrecognized file format");
+               return;
+            }
+            Parser parser = isEdgeFile ? new EdgeParser(br) : new SaveParser(br);
+            parser.parseFile(br);
+         }
+         this.makeArrays(); //convert ArrayList objects into arrays of the appropriate Class type
+         if (isEdgeFile) {
             this.resolveConnectors(); //Identify nature of Connector endpoints
-         } else if (currentLine.startsWith(SAVE_ID)) { //the file chosen is a Save file created by this application
-            this.parseSaveFile(br); //parse the file
-            br.close();
-            this.makeArrays(); //convert ArrayList objects into arrays of the appropriate Class type
-         } else { //the file chosen is something else
-            JOptionPane.showMessageDialog(null, "Unrecognized file format");
          }
       } // try
       catch (FileNotFoundException fnfe) {
@@ -282,4 +284,38 @@ public class EdgeConvertFileParser {
          System.exit(0);
       } // catch IOException
    } // openAndParse()
+
+   abstract class Parser {
+      protected Reader reader;
+
+      public Parser(Reader reader) {
+         this.reader = reader;
+      }
+
+      protected abstract void parseFile(BufferedReader br) throws IOException;
+   }
+
+   class EdgeParser extends Parser {
+
+      public EdgeParser(Reader reader) {
+         super(reader);
+      }
+
+      @Override
+      protected void parseFile(BufferedReader br) throws IOException {
+         parseEdgeFile(br);
+      }
+   }
+
+   class SaveParser extends Parser {
+
+      public SaveParser(Reader reader) {
+         super(reader);
+      }
+
+      @Override
+      protected void parseFile(BufferedReader br) throws IOException {
+         parseSaveFile(br);
+      }
+   }
 } // EdgeConvertFileHandler
