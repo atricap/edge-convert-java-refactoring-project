@@ -146,7 +146,7 @@ public class EdgeConvertFileParser {
       } // catch IOException
    } // openAndParse()
 
-   abstract class Parser {
+   abstract static class Parser {
       protected Reader reader;
 
       public Parser(Reader reader) {
