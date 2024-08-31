@@ -13,6 +13,7 @@ public class EdgeConvertFileParserTest {
     public void characterize() {
         File edgeFile = new File(EDGE_FILE_NAME).getAbsoluteFile();
         EdgeConvertFileParser parser = new EdgeConvertFileParser(edgeFile);
+        parser.openAndParse();
 
         EdgeTable[] tables = parser.getEdgeTables();
         for (EdgeTable table : tables) {

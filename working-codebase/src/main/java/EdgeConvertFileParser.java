@@ -5,7 +5,6 @@ import javax.swing.*;
 public class EdgeConvertFileParser {
    //private String filename = "test.edg";
    private final File parseFile;
-   private BufferedReader br;
    private String currentLine;
    private final ArrayList<EdgeTable> alTables;
    private final ArrayList<EdgeField> alFields;
@@ -23,10 +22,9 @@ public class EdgeConvertFileParser {
       alFields = new ArrayList<>();
       alConnectors = new ArrayList<>();
       parseFile = constructorFile;
-      this.openFile(parseFile);
    }
 
-   public void parseEdgeFile() throws IOException {
+   private void parseEdgeFile(BufferedReader br) throws IOException {
       while ((currentLine = br.readLine()) != null) {
          currentLine = currentLine.trim();
          if (currentLine.startsWith("Figure ")) { //this is the start of a Figure entry
@@ -168,7 +166,7 @@ public class EdgeConvertFileParser {
       } // connectors for() loop
    } // resolveConnectors()
    
-   public void parseSaveFile() throws IOException { //this method is fucked
+   private void parseSaveFile(BufferedReader br) throws IOException { //this method is fucked
       StringTokenizer stTables, stNatFields, stRelFields, stField;
       EdgeTable tempTable;
       EdgeField tempField;
@@ -257,33 +255,31 @@ public class EdgeConvertFileParser {
       return fields;
    }
    
-   public void openFile(File inputFile) {
+   public void openAndParse() {
       try {
-         br = new BufferedReader(new FileReader(inputFile));
+         BufferedReader br = new BufferedReader(new FileReader(parseFile));
          //test for what kind of file we have
          currentLine = br.readLine().trim();
          if (currentLine.startsWith(EDGE_ID)) { //the file chosen is an Edge Diagrammer file
-            this.parseEdgeFile(); //parse the file
+            this.parseEdgeFile(br); //parse the file
             br.close();
             this.makeArrays(); //convert ArrayList objects into arrays of the appropriate Class type
             this.resolveConnectors(); //Identify nature of Connector endpoints
-         } else {
-            if (currentLine.startsWith(SAVE_ID)) { //the file chosen is a Save file created by this application
-               this.parseSaveFile(); //parse the file
-               br.close();
-               this.makeArrays(); //convert ArrayList objects into arrays of the appropriate Class type
-            } else { //the file chosen is something else
-               JOptionPane.showMessageDialog(null, "Unrecognized file format");
-            }
+         } else if (currentLine.startsWith(SAVE_ID)) { //the file chosen is a Save file created by this application
+            this.parseSaveFile(br); //parse the file
+            br.close();
+            this.makeArrays(); //convert ArrayList objects into arrays of the appropriate Class type
+         } else { //the file chosen is something else
+            JOptionPane.showMessageDialog(null, "Unrecognized file format");
          }
       } // try
       catch (FileNotFoundException fnfe) {
-         System.out.println("Cannot find \"" + inputFile.getName() + "\".");
+         System.out.println("Cannot find \"" + parseFile.getName() + "\".");
          System.exit(0);
       } // catch FileNotFoundException
       catch (IOException ioe) {
          System.out.println(ioe);
          System.exit(0);
       } // catch IOException
-   } // openFile()
+   } // openAndParse()
 } // EdgeConvertFileHandler

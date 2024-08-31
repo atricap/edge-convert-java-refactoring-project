@@ -1084,6 +1084,7 @@ public class EdgeConvertGUI {
       parseFile = optParseFile.get();
 
       EdgeConvertFileParser ecfp = new EdgeConvertFileParser(parseFile);
+      ecfp.openAndParse();
       ecModel.tables = ecfp.getEdgeTables();
       for (EdgeTable table : ecModel.tables) {
          table.makeArrays();
@@ -1114,6 +1115,7 @@ public class EdgeConvertGUI {
       saveFile = optSaveFile.get();
 
       EdgeConvertFileParser ecfp = new EdgeConvertFileParser(saveFile);
+      ecfp.openAndParse();
       ecModel.tables = ecfp.getEdgeTables();
       ecModel.fields = ecfp.getEdgeFields();
       populateLists();
