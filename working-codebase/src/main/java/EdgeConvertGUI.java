@@ -21,7 +21,6 @@ public class EdgeConvertGUI {
    private File parseFile, saveFile, outputDir;
    private String truncatedFilename;
    private String databaseName;
-   EdgeMenuListener menuListener;
    EdgeRadioButtonListener radioListener;
    EdgeWindowListener edgeWindowListener;
    CreateDDLButtonListener createDDLListener;
@@ -63,15 +62,17 @@ public class EdgeConvertGUI {
    }
    
    public EdgeConvertGUI() {
-      menuListener = new EdgeMenuListener();
+      EdgeMenuListener menuListener = new EdgeMenuListener();
       radioListener = new EdgeRadioButtonListener();
       edgeWindowListener = new EdgeWindowListener();
       createDDLListener = new CreateDDLButtonListener();
       ecModel = new EdgeConvertModel();
-      
+      DTBuilder dtBuilder = new DTBuilder(this, createDDLListener, ecModel, edgeWindowListener, radioListener, menuListener);
+      DRBuilder drBuilder = new DRBuilder(this, createDDLListener, edgeWindowListener, menuListener);
+
       setUpLookAndFeel();
-      jfDT = createDTScreen();
-      jfDR = createDRScreen();
+      jfDT = dtBuilder.build();
+      jfDR = drBuilder.build();
    }
 
    private static void setUpLookAndFeel() {
@@ -82,523 +83,581 @@ public class EdgeConvertGUI {
       }
    }
 
-   /** Creates Define Tables screen. */
-   private JFrame createDTScreen() {
-      JFrame f = new JFrame(DEFINE_TABLES);
-      f.setLocation(HORIZ_LOC, VERT_LOC);
-      f.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-      f.addWindowListener(edgeWindowListener);
-      Container cp = f.getContentPane();
-      cp.setLayout(new BorderLayout());
-      f.setVisible(true);
-      f.setSize(HORIZ_SIZE + 150, VERT_SIZE);
-
-      f.setJMenuBar(createDTMenuBar());
-
-      cp.add(createDTBottom(), BorderLayout.SOUTH);
-      cp.add(createDTCenter(), BorderLayout.CENTER);
-
-      f.validate();
-      return f;
+   private interface Builder<T> {
+      T build();
    }
 
-   private JMenuBar createDTMenuBar() {
-      JMenuBar mb = new JMenuBar();
+   /**
+    * Builds Define Tables screen.
+    */
+   private static class DTBuilder implements Builder<JFrame> {
+      private final EdgeConvertGUI gui;
+      private final CreateDDLButtonListener createDDLListener;
+      private final EdgeConvertModel ecModel;
+      private final EdgeWindowListener edgeWindowListener;
+      private final EdgeRadioButtonListener radioListener;
+      private final EdgeMenuListener menuListener;
 
-      JMenu jmDTFile = new JMenu("File");
-      jmDTFile.setMnemonic(KeyEvent.VK_F);
-      mb.add(jmDTFile);
-      jmiDTOpenEdge = new JMenuItem("Open Edge File");
-      jmiDTOpenEdge.setMnemonic(KeyEvent.VK_E);
-      jmiDTOpenEdge.addActionListener(menuListener);
-      jmiDTOpenSave = new JMenuItem("Open Save File");
-      jmiDTOpenSave.setMnemonic(KeyEvent.VK_V);
-      jmiDTOpenSave.addActionListener(menuListener);
-      jmiDTSave = new JMenuItem("Save");
-      jmiDTSave.setMnemonic(KeyEvent.VK_S);
-      jmiDTSave.setEnabled(false);
-      jmiDTSave.addActionListener(menuListener);
-      jmiDTSaveAs = new JMenuItem("Save As...");
-      jmiDTSaveAs.setMnemonic(KeyEvent.VK_A);
-      jmiDTSaveAs.setEnabled(false);
-      jmiDTSaveAs.addActionListener(menuListener);
-      jmiDTExit = new JMenuItem("Exit");
-      jmiDTExit.setMnemonic(KeyEvent.VK_X);
-      jmiDTExit.addActionListener(menuListener);
-      jmDTFile.add(jmiDTOpenEdge);
-      jmDTFile.add(jmiDTOpenSave);
-      jmDTFile.add(jmiDTSave);
-      jmDTFile.add(jmiDTSaveAs);
-      jmDTFile.add(jmiDTExit);
-
-      JMenu jmDTOptions = new JMenu("Options");
-      jmDTOptions.setMnemonic(KeyEvent.VK_O);
-      mb.add(jmDTOptions);
-      jmiDTOptionsOutputLocation = new JMenuItem("Set Output File Definition Location");
-      jmiDTOptionsOutputLocation.setMnemonic(KeyEvent.VK_S);
-      jmiDTOptionsOutputLocation.addActionListener(menuListener);
-      jmiDTOptionsShowProducts = new JMenuItem("Show Database Products Available");
-      jmiDTOptionsShowProducts.setMnemonic(KeyEvent.VK_H);
-      jmiDTOptionsShowProducts.setEnabled(false);
-      jmiDTOptionsShowProducts.addActionListener(menuListener);
-      jmDTOptions.add(jmiDTOptionsOutputLocation);
-      jmDTOptions.add(jmiDTOptionsShowProducts);
-
-      JMenu jmDTHelp = new JMenu("Help");
-      jmDTHelp.setMnemonic(KeyEvent.VK_H);
-      mb.add(jmDTHelp);
-      jmiDTHelpAbout = new JMenuItem("About");
-      jmiDTHelpAbout.setMnemonic(KeyEvent.VK_A);
-      jmiDTHelpAbout.addActionListener(menuListener);
-      jmDTHelp.add(jmiDTHelpAbout);
-
-      jfcEdge = new JFileChooser();
-      jfcOutputDir = new JFileChooser();
-      effEdge = new ExampleFileFilter("edg", "Edge Diagrammer Files");
-      effSave = new ExampleFileFilter("sav", "Edge Convert Save Files");
-      jfcOutputDir.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
-      return mb;
-   }
-
-   private JComponent createDTBottom() {
-      JPanel bottom = new JPanel(new GridLayout(1, 2));
-
-      jbDTCreateDDL = new JButton("Create DDL");
-      jbDTCreateDDL.setEnabled(false);
-      jbDTCreateDDL.addActionListener(createDDLListener);
-
-      jbDTDefineRelations = new JButton (DEFINE_RELATIONS);
-      jbDTDefineRelations.setEnabled(false);
-      jbDTDefineRelations.addActionListener(
-            (ActionEvent ae) -> {
-               jfDT.setVisible(false);
-               jfDR.setVisible(true); //show the Define Relations screen
-               clearDTControls();
-               dlmDTFieldsTablesAll.removeAllElements();
-            }
-      );
-
-      bottom.add(jbDTDefineRelations);
-      bottom.add(jbDTCreateDDL);
-
-      return bottom;
-   }
-
-   private JComponent createDTCenter() {
-      JComponent center = new JPanel(new GridLayout(1, 3));
-      JComponent centerRight = new JPanel(new GridLayout(1, 2));
-      dlmDTTablesAll = new DefaultListModel<>();
-      jlDTTablesAll = new JList<>(dlmDTTablesAll);
-      jlDTTablesAll.addListSelectionListener(
-            (ListSelectionEvent lse) -> {
-               int selIndex = jlDTTablesAll.getSelectedIndex();
-               if (selIndex >= 0) {
-                  String selText = dlmDTTablesAll.getElementAt(selIndex);
-                  ecModel.setCurrentDTTable(selText); //set pointer to the selected table
-                  int[] currentNativeFields = ecModel.currentDTTable.getNativeFieldsArray();
-                  jlDTFieldsTablesAll.clearSelection();
-                  dlmDTFieldsTablesAll.removeAllElements();
-                  jbDTMoveUp.setEnabled(false);
-                  jbDTMoveDown.setEnabled(false);
-                  for (int currentNativeField : currentNativeFields) {
-                     dlmDTFieldsTablesAll.addElement(ecModel.getFieldName(currentNativeField));
-                  }
-               }
-               disableControls();
-            }
-      );
-
-      dlmDTFieldsTablesAll = new DefaultListModel<>();
-      jlDTFieldsTablesAll = new JList<>(dlmDTFieldsTablesAll);
-      jlDTFieldsTablesAll.addListSelectionListener(
-            (ListSelectionEvent lse) -> {
-               int selIndex = jlDTFieldsTablesAll.getSelectedIndex();
-               if (selIndex >= 0) {
-                  if (selIndex == 0) {
-                     jbDTMoveUp.setEnabled(false);
-                  } else {
-                     jbDTMoveUp.setEnabled(true);
-                  }
-                  if (selIndex == (dlmDTFieldsTablesAll.getSize() - 1)) {
-                     jbDTMoveDown.setEnabled(false);
-                  } else {
-                     jbDTMoveDown.setEnabled(true);
-                  }
-                  String selText = dlmDTFieldsTablesAll.getElementAt(selIndex);
-                  ecModel.setCurrentDTField(selText); //set pointer to the selected field
-                  enableControls();
-                  jrbDataType[ecModel.currentDTField.getDataType()].setSelected(true); //select the appropriate radio button, based on value of dataType
-                  if (jrbDataType[0].isSelected()) { //this is the Varchar radio button
-                     jbDTVarchar.setEnabled(true); //enable the Varchar button
-                     jtfDTVarchar.setText(Integer.toString(ecModel.currentDTField.getVarcharValue())); //fill text field with varcharValue
-                  } else { //some radio button other than Varchar is selected
-                     jtfDTVarchar.setText(""); //clear the text field
-                     jbDTVarchar.setEnabled(false); //disable the button
-                  }
-                  jcheckDTPrimaryKey.setSelected(ecModel.currentDTField.getIsPrimaryKey()); //clear or set Primary Key checkbox
-                  jcheckDTDisallowNull.setSelected(ecModel.currentDTField.getDisallowNull()); //clear or set Disallow Null checkbox
-                  jtfDTDefaultValue.setText(ecModel.currentDTField.getDefaultValue()); //fill text field with defaultValue
-               }
-            }
-      );
-
-      jpDTMove = new JPanel(new GridLayout(2, 1));
-      jbDTMoveUp = new JButton("^");
-      jbDTMoveUp.setEnabled(false);
-      jbDTMoveUp.addActionListener(
-            (ActionEvent ae) -> {
-               int selection = jlDTFieldsTablesAll.getSelectedIndex();
-               ecModel.currentDTTable.moveFieldUp(selection);
-               //repopulate Fields List
-               int[] currentNativeFields = ecModel.currentDTTable.getNativeFieldsArray();
-               jlDTFieldsTablesAll.clearSelection();
-               dlmDTFieldsTablesAll.removeAllElements();
-               for (int currentNativeField : currentNativeFields) {
-                  dlmDTFieldsTablesAll.addElement(ecModel.getFieldName(currentNativeField));
-               }
-               jlDTFieldsTablesAll.setSelectedIndex(selection - 1);
-               dataSaved = false;
-            }
-      );
-      jbDTMoveDown = new JButton("v");
-      jbDTMoveDown.setEnabled(false);
-      jbDTMoveDown.addActionListener(
-            (ActionEvent ae) -> {
-               int selection = jlDTFieldsTablesAll.getSelectedIndex(); //the original selected index
-               ecModel.currentDTTable.moveFieldDown(selection);
-               //repopulate Fields List
-               int[] currentNativeFields = ecModel.currentDTTable.getNativeFieldsArray();
-               jlDTFieldsTablesAll.clearSelection();
-               dlmDTFieldsTablesAll.removeAllElements();
-               for (int currentNativeField : currentNativeFields) {
-                  dlmDTFieldsTablesAll.addElement(ecModel.getFieldName(currentNativeField));
-               }
-               jlDTFieldsTablesAll.setSelectedIndex(selection + 1);
-               dataSaved = false;
-            }
-      );
-      jpDTMove.add(jbDTMoveUp);
-      jpDTMove.add(jbDTMoveDown);
-
-      jspDTTablesAll = new JScrollPane(jlDTTablesAll);
-      jspDTFieldsTablesAll = new JScrollPane(jlDTFieldsTablesAll);
-      JComponent center1 = new JPanel(new BorderLayout());
-      JComponent center2 = new JPanel(new BorderLayout());
-      jlabDTTables = new JLabel("All Tables", SwingConstants.CENTER);
-      jlabDTFields = new JLabel("Fields List", SwingConstants.CENTER);
-      center1.add(jlabDTTables, BorderLayout.NORTH);
-      center2.add(jlabDTFields, BorderLayout.NORTH);
-      center1.add(jspDTTablesAll, BorderLayout.CENTER);
-      center2.add(jspDTFieldsTablesAll, BorderLayout.CENTER);
-      center2.add(jpDTMove, BorderLayout.EAST);
-      center.add(center1);
-      center.add(center2);
-      center.add(centerRight);
-
-      strDataType = EdgeField.getStrDataType(); //get the list of currently supported data types
-      jrbDataType = new JRadioButton[strDataType.length]; //create array of JRadioButtons, one for each supported data type
-      bgDTDataType = new ButtonGroup();
-      JComponent centerRight1 = new JPanel(new GridLayout(strDataType.length, 1));
-      for (int i = 0; i < strDataType.length; i++) {
-         jrbDataType[i] = new JRadioButton(strDataType[i]); //assign label for radio button from String array
-         jrbDataType[i].setEnabled(false);
-         jrbDataType[i].addActionListener(radioListener);
-         bgDTDataType.add(jrbDataType[i]);
-         centerRight1.add(jrbDataType[i]);
+      public DTBuilder(EdgeConvertGUI gui,
+                       CreateDDLButtonListener createDDLListener,
+                       EdgeConvertModel ecModel,
+                       EdgeWindowListener edgeWindowListener,
+                       EdgeRadioButtonListener radioListener,
+                       EdgeMenuListener menuListener) {
+         this.gui = gui;
+         this.createDDLListener = createDDLListener;
+         this.ecModel = ecModel;
+         this.edgeWindowListener = edgeWindowListener;
+         this.radioListener = radioListener;
+         this.menuListener = menuListener;
       }
-      centerRight.add(centerRight1);
 
-      jcheckDTDisallowNull = new JCheckBox("Disallow Null");
-      jcheckDTDisallowNull.setEnabled(false);
-      jcheckDTDisallowNull.addItemListener(this::onDisallowNullItemStateChanged);
+      @Override
+      public JFrame build() {
+         return createDTScreen();
+      }
 
-      jcheckDTPrimaryKey = new JCheckBox("Primary Key");
-      jcheckDTPrimaryKey.setEnabled(false);
-      jcheckDTPrimaryKey.addItemListener(this::onPrimaryKeyItemStateChanged);
+      private JFrame createDTScreen() {
+         JFrame f = new JFrame(DEFINE_TABLES);
+         f.setLocation(HORIZ_LOC, VERT_LOC);
+         f.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+         f.addWindowListener(edgeWindowListener);
+         Container cp = f.getContentPane();
+         cp.setLayout(new BorderLayout());
+         f.setVisible(true);
+         f.setSize(HORIZ_SIZE + 150, VERT_SIZE);
 
-      jbDTDefaultValue = new JButton("Set Default Value");
-      jbDTDefaultValue.setEnabled(false);
-      jbDTDefaultValue.addActionListener(this::onSetDefaultValueActionPerformed);
-      jtfDTDefaultValue = new JTextField();
-      jtfDTDefaultValue.setEditable(false);
+         f.setJMenuBar(createDTMenuBar());
 
-      jbDTVarchar = new JButton("Set Varchar Length");
-      jbDTVarchar.setEnabled(false);
-      jbDTVarchar.addActionListener(this::onSetVarcharLengthActionPerformed);
-      jtfDTVarchar = new JTextField();
-      jtfDTVarchar.setEditable(false);
+         cp.add(createDTBottom(), BorderLayout.SOUTH);
+         cp.add(createDTCenter(), BorderLayout.CENTER);
 
-      JComponent centerRight2 = new JPanel(new GridLayout(6, 1));
-      centerRight2.add(jbDTVarchar);
-      centerRight2.add(jtfDTVarchar);
-      centerRight2.add(jcheckDTPrimaryKey);
-      centerRight2.add(jcheckDTDisallowNull);
-      centerRight2.add(jbDTDefaultValue);
-      centerRight2.add(jtfDTDefaultValue);
-      centerRight.add(centerRight1);
-      centerRight.add(centerRight2);
-      center.add(centerRight);
+         f.validate();
+         return f;
+      }
 
-      return center;
+      private JMenuBar createDTMenuBar() {
+         JMenuBar mb = new JMenuBar();
+
+         JMenu jmDTFile = new JMenu("File");
+         jmDTFile.setMnemonic(KeyEvent.VK_F);
+         mb.add(jmDTFile);
+         gui.jmiDTOpenEdge = new JMenuItem("Open Edge File");
+         gui.jmiDTOpenEdge.setMnemonic(KeyEvent.VK_E);
+         gui.jmiDTOpenEdge.addActionListener(menuListener);
+         gui.jmiDTOpenSave = new JMenuItem("Open Save File");
+         gui.jmiDTOpenSave.setMnemonic(KeyEvent.VK_V);
+         gui.jmiDTOpenSave.addActionListener(menuListener);
+         gui.jmiDTSave = new JMenuItem("Save");
+         gui.jmiDTSave.setMnemonic(KeyEvent.VK_S);
+         gui.jmiDTSave.setEnabled(false);
+         gui.jmiDTSave.addActionListener(menuListener);
+         gui.jmiDTSaveAs = new JMenuItem("Save As...");
+         gui.jmiDTSaveAs.setMnemonic(KeyEvent.VK_A);
+         gui.jmiDTSaveAs.setEnabled(false);
+         gui.jmiDTSaveAs.addActionListener(menuListener);
+         gui.jmiDTExit = new JMenuItem("Exit");
+         gui.jmiDTExit.setMnemonic(KeyEvent.VK_X);
+         gui.jmiDTExit.addActionListener(menuListener);
+         jmDTFile.add(gui.jmiDTOpenEdge);
+         jmDTFile.add(gui.jmiDTOpenSave);
+         jmDTFile.add(gui.jmiDTSave);
+         jmDTFile.add(gui.jmiDTSaveAs);
+         jmDTFile.add(gui.jmiDTExit);
+
+         JMenu jmDTOptions = new JMenu("Options");
+         jmDTOptions.setMnemonic(KeyEvent.VK_O);
+         mb.add(jmDTOptions);
+         gui.jmiDTOptionsOutputLocation = new JMenuItem("Set Output File Definition Location");
+         gui.jmiDTOptionsOutputLocation.setMnemonic(KeyEvent.VK_S);
+         gui.jmiDTOptionsOutputLocation.addActionListener(menuListener);
+         gui.jmiDTOptionsShowProducts = new JMenuItem("Show Database Products Available");
+         gui.jmiDTOptionsShowProducts.setMnemonic(KeyEvent.VK_H);
+         gui.jmiDTOptionsShowProducts.setEnabled(false);
+         gui.jmiDTOptionsShowProducts.addActionListener(menuListener);
+         jmDTOptions.add(gui.jmiDTOptionsOutputLocation);
+         jmDTOptions.add(gui.jmiDTOptionsShowProducts);
+
+         JMenu jmDTHelp = new JMenu("Help");
+         jmDTHelp.setMnemonic(KeyEvent.VK_H);
+         mb.add(jmDTHelp);
+         gui.jmiDTHelpAbout = new JMenuItem("About");
+         gui.jmiDTHelpAbout.setMnemonic(KeyEvent.VK_A);
+         gui.jmiDTHelpAbout.addActionListener(menuListener);
+         jmDTHelp.add(gui.jmiDTHelpAbout);
+
+         gui.jfcEdge = new JFileChooser();
+         gui.jfcOutputDir = new JFileChooser();
+         gui.effEdge = new ExampleFileFilter("edg", "Edge Diagrammer Files");
+         gui.effSave = new ExampleFileFilter("sav", "Edge Convert Save Files");
+         gui.jfcOutputDir.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+         return mb;
+      }
+
+      private JComponent createDTBottom() {
+         JPanel bottom = new JPanel(new GridLayout(1, 2));
+
+         gui.jbDTCreateDDL = new JButton("Create DDL");
+         gui.jbDTCreateDDL.setEnabled(false);
+         gui.jbDTCreateDDL.addActionListener(createDDLListener);
+
+         gui.jbDTDefineRelations = new JButton (DEFINE_RELATIONS);
+         gui.jbDTDefineRelations.setEnabled(false);
+         gui.jbDTDefineRelations.addActionListener((ActionEvent ae) -> gui.showDRScreen());
+
+         bottom.add(gui.jbDTDefineRelations);
+         bottom.add(gui.jbDTCreateDDL);
+
+         return bottom;
+      }
+
+      private JComponent createDTCenter() {
+         JComponent center = new JPanel(new GridLayout(1, 3));
+         JComponent centerRight = new JPanel(new GridLayout(1, 2));
+         gui.dlmDTTablesAll = new DefaultListModel<>();
+         gui.jlDTTablesAll = new JList<>(gui.dlmDTTablesAll);
+         gui.jlDTTablesAll.addListSelectionListener((ListSelectionEvent lse) -> onDTTablesAllSelection(lse, gui, ecModel));
+
+         gui.dlmDTFieldsTablesAll = new DefaultListModel<>();
+         gui.jlDTFieldsTablesAll = new JList<>(gui.dlmDTFieldsTablesAll);
+         gui.jlDTFieldsTablesAll.addListSelectionListener((ListSelectionEvent lse) -> onDTFieldsTablesAllSelection(lse, gui, ecModel));
+
+         gui.jpDTMove = new JPanel(new GridLayout(2, 1));
+         gui.jbDTMoveUp = new JButton("^");
+         gui.jbDTMoveUp.setEnabled(false);
+         gui.jbDTMoveUp.addActionListener((ActionEvent ae) -> onDTMoveUp(ae, gui, ecModel));
+         gui.jbDTMoveDown = new JButton("v");
+         gui.jbDTMoveDown.setEnabled(false);
+         gui.jbDTMoveDown.addActionListener((ActionEvent ae) -> onDTMoveDown(ae, gui, ecModel));
+         gui.jpDTMove.add(gui.jbDTMoveUp);
+         gui.jpDTMove.add(gui.jbDTMoveDown);
+
+         gui.jspDTTablesAll = new JScrollPane(gui.jlDTTablesAll);
+         gui.jspDTFieldsTablesAll = new JScrollPane(gui.jlDTFieldsTablesAll);
+         JComponent center1 = new JPanel(new BorderLayout());
+         JComponent center2 = new JPanel(new BorderLayout());
+         gui.jlabDTTables = new JLabel("All Tables", SwingConstants.CENTER);
+         gui.jlabDTFields = new JLabel("Fields List", SwingConstants.CENTER);
+         center1.add(gui.jlabDTTables, BorderLayout.NORTH);
+         center2.add(gui.jlabDTFields, BorderLayout.NORTH);
+         center1.add(gui.jspDTTablesAll, BorderLayout.CENTER);
+         center2.add(gui.jspDTFieldsTablesAll, BorderLayout.CENTER);
+         center2.add(gui.jpDTMove, BorderLayout.EAST);
+         center.add(center1);
+         center.add(center2);
+         center.add(centerRight);
+
+         gui.strDataType = EdgeField.getStrDataType(); //get the list of currently supported data types
+         gui.jrbDataType = new JRadioButton[gui.strDataType.length]; //create array of JRadioButtons, one for each supported data type
+         gui.bgDTDataType = new ButtonGroup();
+         JComponent centerRight1 = new JPanel(new GridLayout(gui.strDataType.length, 1));
+         for (int i = 0; i < gui.strDataType.length; i++) {
+            gui.jrbDataType[i] = new JRadioButton(gui.strDataType[i]); //assign label for radio button from String array
+            gui.jrbDataType[i].setEnabled(false);
+            gui.jrbDataType[i].addActionListener(radioListener);
+            gui.bgDTDataType.add(gui.jrbDataType[i]);
+            centerRight1.add(gui.jrbDataType[i]);
+         }
+         centerRight.add(centerRight1);
+
+         gui.jcheckDTDisallowNull = new JCheckBox("Disallow Null");
+         gui.jcheckDTDisallowNull.setEnabled(false);
+         gui.jcheckDTDisallowNull.addItemListener(gui::onDisallowNullItemStateChanged);
+
+         gui.jcheckDTPrimaryKey = new JCheckBox("Primary Key");
+         gui.jcheckDTPrimaryKey.setEnabled(false);
+         gui.jcheckDTPrimaryKey.addItemListener(gui::onPrimaryKeyItemStateChanged);
+
+         gui.jbDTDefaultValue = new JButton("Set Default Value");
+         gui.jbDTDefaultValue.setEnabled(false);
+         gui.jbDTDefaultValue.addActionListener(gui::onSetDefaultValueActionPerformed);
+         gui.jtfDTDefaultValue = new JTextField();
+         gui.jtfDTDefaultValue.setEditable(false);
+
+         gui.jbDTVarchar = new JButton("Set Varchar Length");
+         gui.jbDTVarchar.setEnabled(false);
+         gui.jbDTVarchar.addActionListener(gui::onSetVarcharLengthActionPerformed);
+         gui.jtfDTVarchar = new JTextField();
+         gui.jtfDTVarchar.setEditable(false);
+
+         JComponent centerRight2 = new JPanel(new GridLayout(6, 1));
+         centerRight2.add(gui.jbDTVarchar);
+         centerRight2.add(gui.jtfDTVarchar);
+         centerRight2.add(gui.jcheckDTPrimaryKey);
+         centerRight2.add(gui.jcheckDTDisallowNull);
+         centerRight2.add(gui.jbDTDefaultValue);
+         centerRight2.add(gui.jtfDTDefaultValue);
+         centerRight.add(centerRight1);
+         centerRight.add(centerRight2);
+         center.add(centerRight);
+
+         return center;
+      }
    }
 
-   /** Creates Define Relations screen. */
-   private JFrame createDRScreen() {
-      JFrame f = new JFrame(DEFINE_RELATIONS);
-      f.setSize(HORIZ_SIZE, VERT_SIZE);
-      f.setLocation(HORIZ_LOC, VERT_LOC);
-      f.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-      f.addWindowListener(edgeWindowListener);
-      Container cp = f.getContentPane();
-      cp.setLayout(new BorderLayout());
+   /**
+    * Builds Define Relations screen.
+    */
+   private static class DRBuilder implements Builder<JFrame> {
+      private final EdgeConvertGUI gui;
+      private final CreateDDLButtonListener createDDLListener;
+      private final EdgeWindowListener edgeWindowListener;
+      private final EdgeMenuListener menuListener;
 
-      f.setJMenuBar(createDRMenuBar());
+      public DRBuilder(EdgeConvertGUI gui,
+                       CreateDDLButtonListener createDDLListener,
+                       EdgeWindowListener edgeWindowListener,
+                       EdgeMenuListener menuListener) {
+         this.gui = gui;
+         this.createDDLListener = createDDLListener;
+         this.edgeWindowListener = edgeWindowListener;
+         this.menuListener = menuListener;
+      }
 
-      cp.add(createDRCenter(), BorderLayout.CENTER);
-      cp.add(createDRBottom(), BorderLayout.SOUTH);
+      @Override
+      public JFrame build() {
+         return createDRScreen();
+      }
 
-      return f;
+      private JFrame createDRScreen() {
+         JFrame f = new JFrame(DEFINE_RELATIONS);
+         f.setSize(HORIZ_SIZE, VERT_SIZE);
+         f.setLocation(HORIZ_LOC, VERT_LOC);
+         f.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+         f.addWindowListener(edgeWindowListener);
+         Container cp = f.getContentPane();
+         cp.setLayout(new BorderLayout());
+
+         f.setJMenuBar(createDRMenuBar());
+
+         cp.add(createDRCenter(), BorderLayout.CENTER);
+         cp.add(createDRBottom(), BorderLayout.SOUTH);
+
+         return f;
+      }
+
+      private JMenuBar createDRMenuBar() {
+         JMenuBar mb = new JMenuBar();
+
+         JMenu jmDRFile = new JMenu("File");
+         jmDRFile.setMnemonic(KeyEvent.VK_F);
+         mb.add(jmDRFile);
+         gui.jmiDROpenEdge = new JMenuItem("Open Edge File");
+         gui.jmiDROpenEdge.setMnemonic(KeyEvent.VK_E);
+         gui.jmiDROpenEdge.addActionListener(menuListener);
+         gui.jmiDROpenSave = new JMenuItem("Open Save File");
+         gui.jmiDROpenSave.setMnemonic(KeyEvent.VK_V);
+         gui.jmiDROpenSave.addActionListener(menuListener);
+         gui.jmiDRSave = new JMenuItem("Save");
+         gui.jmiDRSave.setMnemonic(KeyEvent.VK_S);
+         gui.jmiDRSave.setEnabled(false);
+         gui.jmiDRSave.addActionListener(menuListener);
+         gui.jmiDRSaveAs = new JMenuItem("Save As...");
+         gui.jmiDRSaveAs.setMnemonic(KeyEvent.VK_A);
+         gui.jmiDRSaveAs.setEnabled(false);
+         gui.jmiDRSaveAs.addActionListener(menuListener);
+         gui.jmiDRExit = new JMenuItem("Exit");
+         gui.jmiDRExit.setMnemonic(KeyEvent.VK_X);
+         gui.jmiDRExit.addActionListener(menuListener);
+         jmDRFile.add(gui.jmiDROpenEdge);
+         jmDRFile.add(gui.jmiDROpenSave);
+         jmDRFile.add(gui.jmiDRSave);
+         jmDRFile.add(gui.jmiDRSaveAs);
+         jmDRFile.add(gui.jmiDRExit);
+
+         JMenu jmDROptions = new JMenu("Options");
+         jmDROptions.setMnemonic(KeyEvent.VK_O);
+         mb.add(jmDROptions);
+         gui.jmiDROptionsOutputLocation = new JMenuItem("Set Output File Definition Location");
+         gui.jmiDROptionsOutputLocation.setMnemonic(KeyEvent.VK_S);
+         gui.jmiDROptionsOutputLocation.addActionListener(menuListener);
+         gui.jmiDROptionsShowProducts = new JMenuItem("Show Database Products Available");
+         gui.jmiDROptionsShowProducts.setMnemonic(KeyEvent.VK_H);
+         gui.jmiDROptionsShowProducts.setEnabled(false);
+         gui.jmiDROptionsShowProducts.addActionListener(menuListener);
+         jmDROptions.add(gui.jmiDROptionsOutputLocation);
+         jmDROptions.add(gui.jmiDROptionsShowProducts);
+
+         JMenu jmDRHelp = new JMenu("Help");
+         jmDRHelp.setMnemonic(KeyEvent.VK_H);
+         mb.add(jmDRHelp);
+         gui.jmiDRHelpAbout = new JMenuItem("About");
+         gui.jmiDRHelpAbout.setMnemonic(KeyEvent.VK_A);
+         gui.jmiDRHelpAbout.addActionListener(menuListener);
+         jmDRHelp.add(gui.jmiDRHelpAbout);
+
+         return mb;
+      }
+
+      private JComponent createDRCenter() {
+         JComponent center = new JPanel(new GridLayout(2, 2));
+         JComponent center1 = new JPanel(new BorderLayout());
+         JComponent center2 = new JPanel(new BorderLayout());
+         JComponent center3 = new JPanel(new BorderLayout());
+         JComponent center4 = new JPanel(new BorderLayout());
+
+         gui.dlmDRTablesRelations = new DefaultListModel<>();
+         gui.jlDRTablesRelations = new JList<>(gui.dlmDRTablesRelations);
+         gui.jlDRTablesRelations.addListSelectionListener(gui::onDRTablesRelationsSelection);
+
+         gui.dlmDRFieldsTablesRelations = new DefaultListModel<>();
+         gui.jlDRFieldsTablesRelations = new JList<>(gui.dlmDRFieldsTablesRelations);
+         gui.jlDRFieldsTablesRelations.addListSelectionListener(gui::onDRFieldsTablesRelationsSelection);
+
+         gui.dlmDRTablesRelatedTo = new DefaultListModel<>();
+         gui.jlDRTablesRelatedTo = new JList<>(gui.dlmDRTablesRelatedTo);
+         gui.jlDRTablesRelatedTo.addListSelectionListener(gui::onDRTablesRelatedToSelection);
+
+         gui.dlmDRFieldsTablesRelatedTo = new DefaultListModel<>();
+         gui.jlDRFieldsTablesRelatedTo = new JList<>(gui.dlmDRFieldsTablesRelatedTo);
+         gui.jlDRFieldsTablesRelatedTo.addListSelectionListener(gui::onDRFieldsTablesRelatedToSelection);
+
+         gui.jspDRTablesRelations = new JScrollPane(gui.jlDRTablesRelations);
+         gui.jspDRFieldsTablesRelations = new JScrollPane(gui.jlDRFieldsTablesRelations);
+         gui.jspDRTablesRelatedTo = new JScrollPane(gui.jlDRTablesRelatedTo);
+         gui.jspDRFieldsTablesRelatedTo = new JScrollPane(gui.jlDRFieldsTablesRelatedTo);
+         gui.jlabDRTablesRelations = new JLabel("Tables With Relations", SwingConstants.CENTER);
+         gui.jlabDRFieldsTablesRelations = new JLabel("Fields in Tables with Relations", SwingConstants.CENTER);
+         gui.jlabDRTablesRelatedTo = new JLabel("Related Tables", SwingConstants.CENTER);
+         gui.jlabDRFieldsTablesRelatedTo = new JLabel("Fields in Related Tables", SwingConstants.CENTER);
+         center1.add(gui.jlabDRTablesRelations, BorderLayout.NORTH);
+         center2.add(gui.jlabDRFieldsTablesRelations, BorderLayout.NORTH);
+         center3.add(gui.jlabDRTablesRelatedTo, BorderLayout.NORTH);
+         center4.add(gui.jlabDRFieldsTablesRelatedTo, BorderLayout.NORTH);
+         center1.add(gui.jspDRTablesRelations, BorderLayout.CENTER);
+         center2.add(gui.jspDRFieldsTablesRelations, BorderLayout.CENTER);
+         center3.add(gui.jspDRTablesRelatedTo, BorderLayout.CENTER);
+         center4.add(gui.jspDRFieldsTablesRelatedTo, BorderLayout.CENTER);
+         center.add(center1);
+         center.add(center2);
+         center.add(center3);
+         center.add(center4);
+
+         return center;
+      }
+
+      private JComponent createDRBottom() {
+         JComponent bottom = new JPanel(new GridLayout(1, 3));
+
+         gui.jbDRDefineTables = new JButton(DEFINE_TABLES);
+         gui.jbDRDefineTables.addActionListener((ActionEvent ae) -> gui.showDTScreen());
+
+         gui.jbDRBindRelation = new JButton("Bind/Unbind Relation");
+         gui.jbDRBindRelation.setEnabled(false);
+         gui.jbDRBindRelation.addActionListener((ActionEvent ae) -> gui.onDRBindRelation());
+
+         gui.jbDRCreateDDL = new JButton("Create DDL");
+         gui.jbDRCreateDDL.setEnabled(false);
+         gui.jbDRCreateDDL.addActionListener(createDDLListener);
+
+         bottom.add(gui.jbDRDefineTables);
+         bottom.add(gui.jbDRBindRelation);
+         bottom.add(gui.jbDRCreateDDL);
+
+         return bottom;
+      }
    }
 
-   private JMenuBar createDRMenuBar() {
-      JMenuBar mb = new JMenuBar();
-
-      JMenu jmDRFile = new JMenu("File");
-      jmDRFile.setMnemonic(KeyEvent.VK_F);
-      mb.add(jmDRFile);
-      jmiDROpenEdge = new JMenuItem("Open Edge File");
-      jmiDROpenEdge.setMnemonic(KeyEvent.VK_E);
-      jmiDROpenEdge.addActionListener(menuListener);
-      jmiDROpenSave = new JMenuItem("Open Save File");
-      jmiDROpenSave.setMnemonic(KeyEvent.VK_V);
-      jmiDROpenSave.addActionListener(menuListener);
-      jmiDRSave = new JMenuItem("Save");
-      jmiDRSave.setMnemonic(KeyEvent.VK_S);
-      jmiDRSave.setEnabled(false);
-      jmiDRSave.addActionListener(menuListener);
-      jmiDRSaveAs = new JMenuItem("Save As...");
-      jmiDRSaveAs.setMnemonic(KeyEvent.VK_A);
-      jmiDRSaveAs.setEnabled(false);
-      jmiDRSaveAs.addActionListener(menuListener);
-      jmiDRExit = new JMenuItem("Exit");
-      jmiDRExit.setMnemonic(KeyEvent.VK_X);
-      jmiDRExit.addActionListener(menuListener);
-      jmDRFile.add(jmiDROpenEdge);
-      jmDRFile.add(jmiDROpenSave);
-      jmDRFile.add(jmiDRSave);
-      jmDRFile.add(jmiDRSaveAs);
-      jmDRFile.add(jmiDRExit);
-
-      JMenu jmDROptions = new JMenu("Options");
-      jmDROptions.setMnemonic(KeyEvent.VK_O);
-      mb.add(jmDROptions);
-      jmiDROptionsOutputLocation = new JMenuItem("Set Output File Definition Location");
-      jmiDROptionsOutputLocation.setMnemonic(KeyEvent.VK_S);
-      jmiDROptionsOutputLocation.addActionListener(menuListener);
-      jmiDROptionsShowProducts = new JMenuItem("Show Database Products Available");
-      jmiDROptionsShowProducts.setMnemonic(KeyEvent.VK_H);
-      jmiDROptionsShowProducts.setEnabled(false);
-      jmiDROptionsShowProducts.addActionListener(menuListener);
-      jmDROptions.add(jmiDROptionsOutputLocation);
-      jmDROptions.add(jmiDROptionsShowProducts);
-
-      JMenu jmDRHelp = new JMenu("Help");
-      jmDRHelp.setMnemonic(KeyEvent.VK_H);
-      mb.add(jmDRHelp);
-      jmiDRHelpAbout = new JMenuItem("About");
-      jmiDRHelpAbout.setMnemonic(KeyEvent.VK_A);
-      jmiDRHelpAbout.addActionListener(menuListener);
-      jmDRHelp.add(jmiDRHelpAbout);
-
-      return mb;
+   private void showDRScreen() {
+      jfDT.setVisible(false);
+      jfDR.setVisible(true);
+      clearDTControls();
+      dlmDTFieldsTablesAll.removeAllElements();
    }
 
-   private JComponent createDRCenter() {
-      JComponent center = new JPanel(new GridLayout(2, 2));
-      JComponent center1 = new JPanel(new BorderLayout());
-      JComponent center2 = new JPanel(new BorderLayout());
-      JComponent center3 = new JPanel(new BorderLayout());
-      JComponent center4 = new JPanel(new BorderLayout());
-
-      dlmDRTablesRelations = new DefaultListModel<>();
-      jlDRTablesRelations = new JList<>(dlmDRTablesRelations);
-      jlDRTablesRelations.addListSelectionListener(
-            (ListSelectionEvent lse) -> {
-               int selIndex = jlDRTablesRelations.getSelectedIndex();
-               if (selIndex >= 0) {
-                  String selText = dlmDRTablesRelations.getElementAt(selIndex);
-                  ecModel.setCurrentDRTable1(selText);
-                  int[] currentNativeFields, currentRelatedTables, currentRelatedFields;
-                  currentNativeFields = ecModel.currentDRTable1.getNativeFieldsArray();
-                  currentRelatedTables = ecModel.currentDRTable1.getRelatedTablesArray();
-                  jlDRFieldsTablesRelations.clearSelection();
-                  jlDRTablesRelatedTo.clearSelection();
-                  jlDRFieldsTablesRelatedTo.clearSelection();
-                  dlmDRFieldsTablesRelations.removeAllElements();
-                  dlmDRTablesRelatedTo.removeAllElements();
-                  dlmDRFieldsTablesRelatedTo.removeAllElements();
-                  for (int currentNativeField : currentNativeFields) {
-                     dlmDRFieldsTablesRelations.addElement(ecModel.getFieldName(currentNativeField));
-                  }
-                  for (int currentRelatedTable : currentRelatedTables) {
-                     dlmDRTablesRelatedTo.addElement(ecModel.getTableName(currentRelatedTable));
-                  }
-               }
-            }
-      );
-
-      dlmDRFieldsTablesRelations = new DefaultListModel<>();
-      jlDRFieldsTablesRelations = new JList<>(dlmDRFieldsTablesRelations);
-      jlDRFieldsTablesRelations.addListSelectionListener(
-            (ListSelectionEvent lse) -> {
-               int selIndex = jlDRFieldsTablesRelations.getSelectedIndex();
-               if (selIndex >= 0) {
-                  String selText = dlmDRFieldsTablesRelations.getElementAt(selIndex);
-                  ecModel.setCurrentDRField1(selText);
-                  if (ecModel.currentDRField1.getFieldBound() == 0) {
-                     jlDRTablesRelatedTo.clearSelection();
-                     jlDRFieldsTablesRelatedTo.clearSelection();
-                     dlmDRFieldsTablesRelatedTo.removeAllElements();
-                  } else {
-                     jlDRTablesRelatedTo.setSelectedValue(ecModel.getTableName(ecModel.currentDRField1.getTableBound()), true);
-                     jlDRFieldsTablesRelatedTo.setSelectedValue(ecModel.getFieldName(ecModel.currentDRField1.getFieldBound()), true);
-                  }
-               }
-            }
-      );
-
-      dlmDRTablesRelatedTo = new DefaultListModel<>();
-      jlDRTablesRelatedTo = new JList<>(dlmDRTablesRelatedTo);
-      jlDRTablesRelatedTo.addListSelectionListener(
-            (ListSelectionEvent lse) -> {
-               int selIndex = jlDRTablesRelatedTo.getSelectedIndex();
-               if (selIndex >= 0) {
-                  String selText = dlmDRTablesRelatedTo.getElementAt(selIndex);
-                  ecModel.setCurrentDRTable2(selText);
-                  int[] currentNativeFields = ecModel.currentDRTable2.getNativeFieldsArray();
-                  dlmDRFieldsTablesRelatedTo.removeAllElements();
-                  for (int currentNativeField : currentNativeFields) {
-                     dlmDRFieldsTablesRelatedTo.addElement(ecModel.getFieldName(currentNativeField));
-                  }
-               }
-            }
-      );
-
-      dlmDRFieldsTablesRelatedTo = new DefaultListModel<>();
-      jlDRFieldsTablesRelatedTo = new JList<>(dlmDRFieldsTablesRelatedTo);
-      jlDRFieldsTablesRelatedTo.addListSelectionListener(
-            (ListSelectionEvent lse) -> {
-               int selIndex = jlDRFieldsTablesRelatedTo.getSelectedIndex();
-               if (selIndex >= 0) {
-                  String selText = dlmDRFieldsTablesRelatedTo.getElementAt(selIndex);
-                  ecModel.setCurrentDRField2(selText);
-                  jbDRBindRelation.setEnabled(true);
-               } else {
-                  jbDRBindRelation.setEnabled(false);
-               }
-            }
-      );
-
-      jspDRTablesRelations = new JScrollPane(jlDRTablesRelations);
-      jspDRFieldsTablesRelations = new JScrollPane(jlDRFieldsTablesRelations);
-      jspDRTablesRelatedTo = new JScrollPane(jlDRTablesRelatedTo);
-      jspDRFieldsTablesRelatedTo = new JScrollPane(jlDRFieldsTablesRelatedTo);
-      jlabDRTablesRelations = new JLabel("Tables With Relations", SwingConstants.CENTER);
-      jlabDRFieldsTablesRelations = new JLabel("Fields in Tables with Relations", SwingConstants.CENTER);
-      jlabDRTablesRelatedTo = new JLabel("Related Tables", SwingConstants.CENTER);
-      jlabDRFieldsTablesRelatedTo = new JLabel("Fields in Related Tables", SwingConstants.CENTER);
-      center1.add(jlabDRTablesRelations, BorderLayout.NORTH);
-      center2.add(jlabDRFieldsTablesRelations, BorderLayout.NORTH);
-      center3.add(jlabDRTablesRelatedTo, BorderLayout.NORTH);
-      center4.add(jlabDRFieldsTablesRelatedTo, BorderLayout.NORTH);
-      center1.add(jspDRTablesRelations, BorderLayout.CENTER);
-      center2.add(jspDRFieldsTablesRelations, BorderLayout.CENTER);
-      center3.add(jspDRTablesRelatedTo, BorderLayout.CENTER);
-      center4.add(jspDRFieldsTablesRelatedTo, BorderLayout.CENTER);
-      center.add(center1);
-      center.add(center2);
-      center.add(center3);
-      center.add(center4);
-
-      return center;
+   private void showDTScreen() {
+      jfDT.setVisible(true);
+      jfDR.setVisible(false);
+      clearDRControls();
+      depopulateLists();
+      populateLists();
    }
 
-   private JComponent createDRBottom() {
-      JComponent bottom = new JPanel(new GridLayout(1, 3));
+   private static void onDTTablesAllSelection(ListSelectionEvent e, EdgeConvertGUI gui, EdgeConvertModel ecModel) {
+      int selIndex = gui.jlDTTablesAll.getSelectedIndex();
+      if (selIndex >= 0) {
+         String selText = gui.dlmDTTablesAll.getElementAt(selIndex);
+         ecModel.setCurrentDTTable(selText); //set pointer to the selected table
+         int[] currentNativeFields = ecModel.currentDTTable.getNativeFieldsArray();
+         gui.jlDTFieldsTablesAll.clearSelection();
+         gui.dlmDTFieldsTablesAll.removeAllElements();
+         gui.jbDTMoveUp.setEnabled(false);
+         gui.jbDTMoveDown.setEnabled(false);
+         for (int currentNativeField : currentNativeFields) {
+            gui.dlmDTFieldsTablesAll.addElement(ecModel.getFieldName(currentNativeField));
+         }
+      }
+      gui.disableControls();
+   }
 
-      jbDRDefineTables = new JButton(DEFINE_TABLES);
-      jbDRDefineTables.addActionListener(
-              (ActionEvent ae) -> {
-                 jfDT.setVisible(true); //show the Define Tables screen
-                 jfDR.setVisible(false);
-                 clearDRControls();
-                 depopulateLists();
-                 populateLists();
-              }
-      );
+   private static void onDTFieldsTablesAllSelection(ListSelectionEvent e, EdgeConvertGUI gui, EdgeConvertModel ecModel) {
+      int selIndex = gui.jlDTFieldsTablesAll.getSelectedIndex();
+      if (selIndex >= 0) {
+         if (selIndex == 0) {
+            gui.jbDTMoveUp.setEnabled(false);
+         } else {
+            gui.jbDTMoveUp.setEnabled(true);
+         }
+         if (selIndex == (gui.dlmDTFieldsTablesAll.getSize() - 1)) {
+            gui.jbDTMoveDown.setEnabled(false);
+         } else {
+            gui.jbDTMoveDown.setEnabled(true);
+         }
+         String selText = gui.dlmDTFieldsTablesAll.getElementAt(selIndex);
+         ecModel.setCurrentDTField(selText); //set pointer to the selected field
+         gui.enableControls();
+         gui.jrbDataType[ecModel.currentDTField.getDataType()].setSelected(true); //select the appropriate radio button, based on value of dataType
+         if (gui.jrbDataType[0].isSelected()) { //this is the Varchar radio button
+            gui.jbDTVarchar.setEnabled(true); //enable the Varchar button
+            gui.jtfDTVarchar.setText(Integer.toString(ecModel.currentDTField.getVarcharValue())); //fill text field with varcharValue
+         } else { //some radio button other than Varchar is selected
+            gui.jtfDTVarchar.setText(""); //clear the text field
+            gui.jbDTVarchar.setEnabled(false); //disable the button
+         }
+         gui.jcheckDTPrimaryKey.setSelected(ecModel.currentDTField.getIsPrimaryKey()); //clear or set Primary Key checkbox
+         gui.jcheckDTDisallowNull.setSelected(ecModel.currentDTField.getDisallowNull()); //clear or set Disallow Null checkbox
+         gui.jtfDTDefaultValue.setText(ecModel.currentDTField.getDefaultValue()); //fill text field with defaultValue
+      }
+   }
 
-      jbDRBindRelation = new JButton("Bind/Unbind Relation");
-      jbDRBindRelation.setEnabled(false);
-      jbDRBindRelation.addActionListener(
-              (ActionEvent ae) -> {
-                 int nativeIndex = jlDRFieldsTablesRelations.getSelectedIndex();
-                 int relatedField = ecModel.currentDRField2.getNumFigure();
-                 if (ecModel.currentDRField1.getFieldBound() == relatedField) { //the selected fields are already bound to each other
-                    int answer = JOptionPane.showConfirmDialog(null, "Do you wish to unbind the relation on field " +
-                                                               ecModel.currentDRField1.getName() + "?",
-                                                               "Are you sure?", JOptionPane.YES_NO_OPTION);
-                    if (answer == JOptionPane.YES_OPTION) {
-                       ecModel.currentDRTable1.setRelatedField(nativeIndex, 0); //clear the related field
-                       ecModel.currentDRField1.setTableBound(0); //clear the bound table
-                       ecModel.currentDRField1.setFieldBound(0); //clear the bound field
-                       jlDRFieldsTablesRelatedTo.clearSelection(); //clear the listbox selection
-                    }
-                    return;
-                 }
-                 if (ecModel.currentDRField1.getFieldBound() != 0) { //field is already bound to a different field
-                    int answer = JOptionPane.showConfirmDialog(null, "There is already a relation defined on field " +
-                                                               ecModel.currentDRField1.getName() + ", do you wish to overwrite it?",
-                                                               "Are you sure?", JOptionPane.YES_NO_OPTION);
-                    if (answer == JOptionPane.NO_OPTION || answer == JOptionPane.CLOSED_OPTION) {
-                       jlDRTablesRelatedTo.setSelectedValue(ecModel.getTableName(ecModel.currentDRField1.getTableBound()), true); //revert selections to saved settings
-                       jlDRFieldsTablesRelatedTo.setSelectedValue(ecModel.getFieldName(ecModel.currentDRField1.getFieldBound()), true); //revert selections to saved settings
-                       return;
-                    }
-                 }
-                 if (ecModel.currentDRField1.getDataType() != ecModel.currentDRField2.getDataType()) {
-                    JOptionPane.showMessageDialog(null, "The datatypes of " + ecModel.currentDRTable1.getName() + "." +
-                                                  ecModel.currentDRField1.getName() + " and " + ecModel.currentDRTable2.getName() +
-                                                  "." + ecModel.currentDRField2.getName() + " do not match.  Unable to bind this relation.");
-                    return;
-                 }
-                 if ((ecModel.currentDRField1.getDataType() == 0) && (ecModel.currentDRField2.getDataType() == 0)) {
-                    if (ecModel.currentDRField1.getVarcharValue() != ecModel.currentDRField2.getVarcharValue()) {
-                       JOptionPane.showMessageDialog(null, "The varchar lengths of " + ecModel.currentDRTable1.getName() + "." +
-                                                     ecModel.currentDRField1.getName() + " and " + ecModel.currentDRTable2.getName() +
-                                                     "." + ecModel.currentDRField2.getName() + " do not match.  Unable to bind this relation.");
-                       return;
-                    }
-                 }
-                 ecModel.currentDRTable1.setRelatedField(nativeIndex, relatedField);
-                 ecModel.currentDRField1.setTableBound(ecModel.currentDRTable2.getNumFigure());
-                 ecModel.currentDRField1.setFieldBound(ecModel.currentDRField2.getNumFigure());
-                 JOptionPane.showMessageDialog(null, "Table " + ecModel.currentDRTable1.getName() + ": native field " +
-                                               ecModel.currentDRField1.getName() + " bound to table " + ecModel.currentDRTable2.getName() +
-                                               " on field " + ecModel.currentDRField2.getName());
-                 dataSaved = false;
-              }
-      );
+   private static void onDTMoveUp(ActionEvent e, EdgeConvertGUI gui, EdgeConvertModel ecModel) {
+      int selection = gui.jlDTFieldsTablesAll.getSelectedIndex();
+      ecModel.currentDTTable.moveFieldUp(selection);
+      //repopulate Fields List
+      int[] currentNativeFields = ecModel.currentDTTable.getNativeFieldsArray();
+      gui.jlDTFieldsTablesAll.clearSelection();
+      gui.dlmDTFieldsTablesAll.removeAllElements();
+      for (int currentNativeField : currentNativeFields) {
+         gui.dlmDTFieldsTablesAll.addElement(ecModel.getFieldName(currentNativeField));
+      }
+      gui.jlDTFieldsTablesAll.setSelectedIndex(selection - 1);
+      gui.dataSaved = false;
+   }
 
-      jbDRCreateDDL = new JButton("Create DDL");
-      jbDRCreateDDL.setEnabled(false);
-      jbDRCreateDDL.addActionListener(createDDLListener);
+   private static void onDTMoveDown(ActionEvent e, EdgeConvertGUI gui, EdgeConvertModel ecModel) {
+      int selection = gui.jlDTFieldsTablesAll.getSelectedIndex(); //the original selected index
+      ecModel.currentDTTable.moveFieldDown(selection);
+      //repopulate Fields List
+      int[] currentNativeFields = ecModel.currentDTTable.getNativeFieldsArray();
+      gui.jlDTFieldsTablesAll.clearSelection();
+      gui.dlmDTFieldsTablesAll.removeAllElements();
+      for (int currentNativeField : currentNativeFields) {
+         gui.dlmDTFieldsTablesAll.addElement(ecModel.getFieldName(currentNativeField));
+      }
+      gui.jlDTFieldsTablesAll.setSelectedIndex(selection + 1);
+      gui.dataSaved = false;
+   }
 
-      bottom.add(jbDRDefineTables);
-      bottom.add(jbDRBindRelation);
-      bottom.add(jbDRCreateDDL);
+   private void onDRTablesRelationsSelection(ListSelectionEvent event) {
+      int selIndex = jlDRTablesRelations.getSelectedIndex();
+      if (selIndex >= 0) {
+         String selText = dlmDRTablesRelations.getElementAt(selIndex);
+         ecModel.setCurrentDRTable1(selText);
+         int[] currentNativeFields, currentRelatedTables, currentRelatedFields;
+         currentNativeFields = ecModel.currentDRTable1.getNativeFieldsArray();
+         currentRelatedTables = ecModel.currentDRTable1.getRelatedTablesArray();
+         jlDRFieldsTablesRelations.clearSelection();
+         jlDRTablesRelatedTo.clearSelection();
+         jlDRFieldsTablesRelatedTo.clearSelection();
+         dlmDRFieldsTablesRelations.removeAllElements();
+         dlmDRTablesRelatedTo.removeAllElements();
+         dlmDRFieldsTablesRelatedTo.removeAllElements();
+         for (int currentNativeField : currentNativeFields) {
+            dlmDRFieldsTablesRelations.addElement(ecModel.getFieldName(currentNativeField));
+         }
+         for (int currentRelatedTable : currentRelatedTables) {
+            dlmDRTablesRelatedTo.addElement(ecModel.getTableName(currentRelatedTable));
+         }
+      }
+   }
 
-      return bottom;
+   private void onDRFieldsTablesRelationsSelection(ListSelectionEvent e) {
+      int selIndex = jlDRFieldsTablesRelations.getSelectedIndex();
+      if (selIndex >= 0) {
+         String selText = dlmDRFieldsTablesRelations.getElementAt(selIndex);
+         ecModel.setCurrentDRField1(selText);
+         if (ecModel.currentDRField1.getFieldBound() == 0) {
+            jlDRTablesRelatedTo.clearSelection();
+            jlDRFieldsTablesRelatedTo.clearSelection();
+            dlmDRFieldsTablesRelatedTo.removeAllElements();
+         } else {
+            jlDRTablesRelatedTo.setSelectedValue(ecModel.getTableName(ecModel.currentDRField1.getTableBound()), true);
+            jlDRFieldsTablesRelatedTo.setSelectedValue(ecModel.getFieldName(ecModel.currentDRField1.getFieldBound()), true);
+         }
+      }
+   }
+
+   private void onDRTablesRelatedToSelection(ListSelectionEvent e) {
+      int selIndex = jlDRTablesRelatedTo.getSelectedIndex();
+      if (selIndex >= 0) {
+         String selText = dlmDRTablesRelatedTo.getElementAt(selIndex);
+         ecModel.setCurrentDRTable2(selText);
+         int[] currentNativeFields = ecModel.currentDRTable2.getNativeFieldsArray();
+         dlmDRFieldsTablesRelatedTo.removeAllElements();
+         for (int currentNativeField : currentNativeFields) {
+            dlmDRFieldsTablesRelatedTo.addElement(ecModel.getFieldName(currentNativeField));
+         }
+      }
+   }
+
+   private void onDRFieldsTablesRelatedToSelection(ListSelectionEvent e) {
+      int selIndex = jlDRFieldsTablesRelatedTo.getSelectedIndex();
+      if (selIndex >= 0) {
+         String selText = dlmDRFieldsTablesRelatedTo.getElementAt(selIndex);
+         ecModel.setCurrentDRField2(selText);
+         jbDRBindRelation.setEnabled(true);
+      } else {
+         jbDRBindRelation.setEnabled(false);
+      }
+   }
+
+   private void onDRBindRelation() {
+      int nativeIndex = jlDRFieldsTablesRelations.getSelectedIndex();
+      int relatedField = ecModel.currentDRField2.getNumFigure();
+      if (ecModel.currentDRField1.getFieldBound() == relatedField) { //the selected fields are already bound to each other
+         int answer = JOptionPane.showConfirmDialog(null, "Do you wish to unbind the relation on field " +
+                                                    ecModel.currentDRField1.getName() + "?",
+                                                    "Are you sure?", JOptionPane.YES_NO_OPTION);
+         if (answer == JOptionPane.YES_OPTION) {
+            ecModel.currentDRTable1.setRelatedField(nativeIndex, 0); //clear the related field
+            ecModel.currentDRField1.setTableBound(0); //clear the bound table
+            ecModel.currentDRField1.setFieldBound(0); //clear the bound field
+            jlDRFieldsTablesRelatedTo.clearSelection(); //clear the listbox selection
+         }
+         return;
+      }
+      if (ecModel.currentDRField1.getFieldBound() != 0) { //field is already bound to a different field
+         int answer = JOptionPane.showConfirmDialog(null, "There is already a relation defined on field " +
+                                                    ecModel.currentDRField1.getName() + ", do you wish to overwrite it?",
+                                                    "Are you sure?", JOptionPane.YES_NO_OPTION);
+         if (answer == JOptionPane.NO_OPTION || answer == JOptionPane.CLOSED_OPTION) {
+            jlDRTablesRelatedTo.setSelectedValue(ecModel.getTableName(ecModel.currentDRField1.getTableBound()), true); //revert selections to saved settings
+            jlDRFieldsTablesRelatedTo.setSelectedValue(ecModel.getFieldName(ecModel.currentDRField1.getFieldBound()), true); //revert selections to saved settings
+            return;
+         }
+      }
+      if (ecModel.currentDRField1.getDataType() != ecModel.currentDRField2.getDataType()) {
+         JOptionPane.showMessageDialog(null, "The datatypes of " + ecModel.currentDRTable1.getName() + "." +
+                                       ecModel.currentDRField1.getName() + " and " + ecModel.currentDRTable2.getName() +
+                                       "." + ecModel.currentDRField2.getName() + " do not match.  Unable to bind this relation.");
+         return;
+      }
+      if ((ecModel.currentDRField1.getDataType() == 0) && (ecModel.currentDRField2.getDataType() == 0)) {
+         if (ecModel.currentDRField1.getVarcharValue() != ecModel.currentDRField2.getVarcharValue()) {
+            JOptionPane.showMessageDialog(null, "The varchar lengths of " + ecModel.currentDRTable1.getName() + "." +
+                                          ecModel.currentDRField1.getName() + " and " + ecModel.currentDRTable2.getName() +
+                                          "." + ecModel.currentDRField2.getName() + " do not match.  Unable to bind this relation.");
+            return;
+         }
+      }
+      ecModel.currentDRTable1.setRelatedField(nativeIndex, relatedField);
+      ecModel.currentDRField1.setTableBound(ecModel.currentDRTable2.getNumFigure());
+      ecModel.currentDRField1.setFieldBound(ecModel.currentDRField2.getNumFigure());
+      JOptionPane.showMessageDialog(null, "Table " + ecModel.currentDRTable1.getName() + ": native field " +
+                                    ecModel.currentDRField1.getName() + " bound to table " + ecModel.currentDRTable2.getName() +
+                                    " on field " + ecModel.currentDRField2.getName());
+      dataSaved = false;
    }
 
    public static void setReadSuccess(boolean value) {
@@ -985,7 +1044,7 @@ public class EdgeConvertGUI {
    }
 
    class EdgeRadioButtonListener implements ActionListener {
-      public void actionPerformed(ActionEvent ae) {
+      @Override public void actionPerformed(ActionEvent ae) {
          for (int i = 0; i < jrbDataType.length; i++) {
             if (jrbDataType[i].isSelected()) {
                ecModel.currentDTField.setDataType(i);
@@ -1006,14 +1065,14 @@ public class EdgeConvertGUI {
    }
    
    class EdgeWindowListener implements WindowListener {
-      public void windowActivated(WindowEvent we) {}
-      public void windowClosed(WindowEvent we) {}
-      public void windowDeactivated(WindowEvent we) {}
-      public void windowDeiconified(WindowEvent we) {}
-      public void windowIconified(WindowEvent we) {}
-      public void windowOpened(WindowEvent we) {}
+      @Override public void windowActivated(WindowEvent we) {}
+      @Override public void windowClosed(WindowEvent we) {}
+      @Override public void windowDeactivated(WindowEvent we) {}
+      @Override public void windowDeiconified(WindowEvent we) {}
+      @Override public void windowIconified(WindowEvent we) {}
+      @Override public void windowOpened(WindowEvent we) {}
       
-      public void windowClosing(WindowEvent we) {
+      @Override public void windowClosing(WindowEvent we) {
          if (!dataSaved) {
             int answer = JOptionPane.showOptionDialog(null,
                 "You currently have unsaved data. Would you like to save?",
@@ -1042,7 +1101,7 @@ public class EdgeConvertGUI {
    }
    
    class CreateDDLButtonListener implements ActionListener {
-      public void actionPerformed(ActionEvent ae) {
+      @Override public void actionPerformed(ActionEvent ae) {
          while (outputDir == null) {
             JOptionPane.showMessageDialog(null, "You have not selected a path that contains valid output definition files yet.\nPlease select a path now.");
             setOutputDir();
@@ -1057,7 +1116,7 @@ public class EdgeConvertGUI {
    }
 
    class EdgeMenuListener implements ActionListener {
-      public void actionPerformed(ActionEvent ae) {
+      @Override public void actionPerformed(ActionEvent ae) {
          if ((ae.getSource() == jmiDTOpenEdge) || (ae.getSource() == jmiDROpenEdge)) {
             openEdgeFile();
          }
@@ -1201,4 +1260,4 @@ public class EdgeConvertGUI {
       }
       return Optional.ofNullable(jfcEdge.getSelectedFile());
    }
-} // EdgeConvertGUI
+}
