@@ -1183,7 +1183,22 @@ public class EdgeConvertGUI {
 
    private void openEdgeFile(File parseFile) {
       EdgeConvertFileParser parser = new EdgeConvertFileParser(parseFile);
-      parser.openAndParse();
+      try {
+         parser.openAndParse();
+      } catch (UnrecognizedFileFormatException e) {
+         JOptionPane.showMessageDialog(null, "Unrecognized file format");
+         e.printStackTrace();
+         return;
+      } catch (FileNotFoundException e) {
+         System.out.printf("Cannot find file: %s%n", e.toString());
+         System.exit(0);
+      } catch (IOException e) {
+         System.out.println(e);
+         System.exit(0);
+      } catch (ParserException e) {
+         JOptionPane.showMessageDialog(null, e.getMessage());
+         EdgeConvertGUI.setReadSuccess(false);
+      }
       ecModel.tables = parser.getEdgeTables();
       for (EdgeTable table : ecModel.tables) {
          table.makeArrays();
@@ -1218,7 +1233,22 @@ public class EdgeConvertGUI {
 
    private void openSaveFile(File saveFile) {
       EdgeConvertFileParser parser = new EdgeConvertFileParser(saveFile);
-      parser.openAndParse();
+      try {
+         parser.openAndParse();
+      } catch (UnrecognizedFileFormatException e) {
+         JOptionPane.showMessageDialog(null, "Unrecognized file format");
+         e.printStackTrace();
+         return;
+      } catch (FileNotFoundException e) {
+         System.out.printf("Cannot find file: %s%n", e.toString());
+         System.exit(0);
+      } catch (IOException e) {
+         System.out.println(e);
+         System.exit(0);
+      } catch (ParserException e) {
+         JOptionPane.showMessageDialog(null, e.getMessage());
+         EdgeConvertGUI.setReadSuccess(false);
+      }
       ecModel.tables = parser.getEdgeTables();
       ecModel.fields = parser.getEdgeFields();
       populateLists();

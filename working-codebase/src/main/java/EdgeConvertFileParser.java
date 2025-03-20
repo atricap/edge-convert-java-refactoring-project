@@ -6,9 +6,9 @@ public class EdgeConvertFileParser {
    //private String filename = "test.edg";
    private final File fileToParse;
    private String currentLine;
-   private final ArrayList<EdgeTable> alTables;
-   private final ArrayList<EdgeField> alFields;
-   private final ArrayList<EdgeConnector> alConnectors;
+   private final ArrayList<EdgeTable> alTables = new ArrayList<>();
+   private final ArrayList<EdgeField> alFields = new ArrayList<>();
+   private final ArrayList<EdgeConnector> alConnectors = new ArrayList<>();
    private EdgeTable[] tables;
    private EdgeField[] fields;
    private EdgeConnector[] connectors;
@@ -18,13 +18,13 @@ public class EdgeConvertFileParser {
    public static final String DELIM = "|";
    
    public EdgeConvertFileParser(File constructorFile) {
-      alTables = new ArrayList<>();
-      alFields = new ArrayList<>();
-      alConnectors = new ArrayList<>();
       fileToParse = constructorFile;
    }
 
-   private void resolveConnectors() { //Identify nature of Connector endpoints
+   /**
+    * Identifies nature of Connector endpoints.
+    */
+   private void resolveConnectors() {
       int endPoint1, endPoint2;
       int fieldIndex = 0, table1Index = 0, table2Index = 0;
       for (EdgeConnector connector : connectors) {
@@ -84,10 +84,13 @@ public class EdgeConvertFileParser {
             EdgeConvertGUI.setReadSuccess(false); //this tells GUI not to populate JList components
             break; //stop processing list of Connectors
          }
-      } // connectors for() loop
-   } // resolveConnectors()
+      }
+   }
 
-   private void makeArrays() { //convert ArrayList objects into arrays of the appropriate Class type
+   /**
+    * Converts ArrayList objects into arrays of the appropriate Class type.
+    */
+   private void makeArrays() {
       if (alTables != null) {
          tables = alTables.toArray(new EdgeTable[0]);
       }
@@ -116,35 +119,24 @@ public class EdgeConvertFileParser {
       return fields;
    }
    
-   public void openAndParse() {
-      try {
-         boolean isEdgeFile;
-         try (BufferedReader br = new BufferedReader(new FileReader(fileToParse))) {
-            //test for what kind of file we have
-            currentLine = br.readLine().trim();
-            isEdgeFile = currentLine.startsWith(EDGE_ID); //the file chosen is an Edge Diagrammer file
-            boolean isSaveFile = currentLine.startsWith(SAVE_ID); //the file chosen is a Save file created by this application
-            if (!isEdgeFile && !isSaveFile) { //the file chosen is something else
-               JOptionPane.showMessageDialog(null, "Unrecognized file format");
-               return;
-            }
-            Parser parser = isEdgeFile ? new EdgeParser(br) : new SaveParser(br);
-            parser.parseFile(br);
+   public void openAndParse() throws UnrecognizedFileFormatException, IOException, ParserException {
+      boolean isEdgeFile;
+      try (BufferedReader br = new BufferedReader(new FileReader(fileToParse))) {
+         //test for what kind of file we have
+         currentLine = br.readLine().trim();
+         isEdgeFile = currentLine.startsWith(EDGE_ID); //the file chosen is an Edge Diagrammer file
+         boolean isSaveFile = currentLine.startsWith(SAVE_ID); //the file chosen is a Save file created by this application
+         if (!isEdgeFile && !isSaveFile) { //the file chosen is something else
+            throw new UnrecognizedFileFormatException(fileToParse);
          }
-         this.makeArrays(); //convert ArrayList objects into arrays of the appropriate Class type
-         if (isEdgeFile) {
-            this.resolveConnectors(); //Identify nature of Connector endpoints
-         }
-      } // try
-      catch (FileNotFoundException fnfe) {
-         System.out.println("Cannot find \"" + fileToParse.getName() + "\".");
-         System.exit(0);
-      } // catch FileNotFoundException
-      catch (IOException ioe) {
-         System.out.println(ioe);
-         System.exit(0);
-      } // catch IOException
-   } // openAndParse()
+         Parser parser = isEdgeFile ? new EdgeParser(br) : new SaveParser(br);
+         parser.parseFile(br);
+      }
+      this.makeArrays();
+      if (isEdgeFile) {
+         this.resolveConnectors();
+      }
+   }
 
    abstract static class Parser {
       protected Reader reader;
@@ -153,7 +145,7 @@ public class EdgeConvertFileParser {
          this.reader = reader;
       }
 
-      protected abstract void parseFile(BufferedReader br) throws IOException;
+      protected abstract void parseFile(BufferedReader br) throws IOException, ParserException;
    }
 
    class EdgeParser extends Parser {
@@ -163,7 +155,7 @@ public class EdgeConvertFileParser {
       }
 
       @Override
-      protected void parseFile(BufferedReader br) throws IOException {
+      protected void parseFile(BufferedReader br) throws IOException, ParserException {
          while ((currentLine = br.readLine()) != null) {
             currentLine = currentLine.trim();
             if (currentLine.startsWith("Figure ")) { //this is the start of a Figure entry
@@ -175,9 +167,7 @@ public class EdgeConvertFileParser {
                }
                String style = currentLine.substring(currentLine.indexOf("\"") + 1, currentLine.lastIndexOf("\"")); //get the Style parameter
                if (style.startsWith("Relation")) { //presence of Relations implies lack of normalization
-                  JOptionPane.showMessageDialog(null, "The Edge Diagrammer file\n" + fileToParse + "\ncontains relations.  Please resolve them and try again.");
-                  EdgeConvertGUI.setReadSuccess(false);
-                  break;
+                  throw new ParserException(String.format("The Edge Diagrammer file\n%s\ncontains relations.  Please resolve them and try again.", fileToParse));
                }
                boolean isEntity = style.startsWith("Entity");
                boolean isAttribute = style.startsWith("Attribute");
@@ -187,9 +177,7 @@ public class EdgeConvertFileParser {
                currentLine = br.readLine().trim(); //this should be Text
                String text = currentLine.substring(currentLine.indexOf("\"") + 1, currentLine.lastIndexOf("\"")).replaceAll(" ", ""); //get the Text parameter
                if (text.isEmpty()) {
-                  JOptionPane.showMessageDialog(null, "There are entities or attributes with blank names in this diagram.\nPlease provide names for them and try again.");
-                  EdgeConvertGUI.setReadSuccess(false);
-                  break;
+                  throw new ParserException("There are entities or attributes with blank names in this diagram.\nPlease provide names for them and try again.");
                }
                int escape = text.indexOf("\\");
                if (escape > 0) { //Edge denotes a line break as "\line", disregard anything after a backslash
@@ -204,9 +192,7 @@ public class EdgeConvertFileParser {
 
                if (isEntity) { //create a new EdgeTable object and add it to the alTables ArrayList
                   if (isTableDup(text)) {
-                     JOptionPane.showMessageDialog(null, "There are multiple tables called " + text + " in this diagram.\nPlease rename all but one of them and try again.");
-                     EdgeConvertGUI.setReadSuccess(false);
-                     break;
+                     throw new ParserException("There are multiple tables called " + text + " in this diagram.\nPlease rename all but one of them and try again.");
                   }
                   alTables.add(new EdgeTable(numFigure + DELIM + text));
                }
@@ -215,7 +201,7 @@ public class EdgeConvertFileParser {
                   tempField.setIsPrimaryKey(isUnderlined);
                   alFields.add(tempField);
                }
-            } // if("Figure")
+            }
             if (currentLine.startsWith("Connector ")) { //this is the start of a Connector entry
                int numConnector = Integer.parseInt(currentLine.substring(currentLine.indexOf(" ") + 1)); //get the Connector number
                currentLine = br.readLine().trim(); // this should be "{"
@@ -238,8 +224,8 @@ public class EdgeConvertFileParser {
                } while (!currentLine.equals("}")); // this is the end of a Connector entry
 
                alConnectors.add(new EdgeConnector(numConnector + DELIM + endPoint1 + DELIM + endPoint2 + DELIM + endStyle1 + DELIM + endStyle2));
-            } // if("Connector")
-         } // while()
+            }
+         }
       }
    }
 
@@ -311,4 +297,4 @@ public class EdgeConvertFileParser {
          }
       }
    }
-} // EdgeConvertFileHandler
+}

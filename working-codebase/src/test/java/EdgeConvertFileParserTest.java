@@ -1,6 +1,7 @@
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -10,7 +11,7 @@ public class EdgeConvertFileParserTest {
     public static final String EDGE_FILE_NAME = "src/test/resources/Courses.edg";
 
     @Test
-    public void characterize() {
+    public void characterize() throws UnrecognizedFileFormatException, IOException, ParserException {
         File edgeFile = new File(EDGE_FILE_NAME).getAbsoluteFile();
         EdgeConvertFileParser parser = new EdgeConvertFileParser(edgeFile);
         parser.openAndParse();
