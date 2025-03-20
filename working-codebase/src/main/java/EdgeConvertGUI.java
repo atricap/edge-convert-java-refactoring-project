@@ -1,10 +1,14 @@
+import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.filechooser.FileFilter;
 import java.awt.*;
 import java.awt.event.*;
-import javax.swing.*;
-import javax.swing.event.*;
 import java.io.*;
-import java.util.*;
-import java.lang.reflect.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Optional;
 
 public class EdgeConvertGUI {
    
@@ -1124,16 +1128,13 @@ public class EdgeConvertGUI {
          if ((ae.getSource() == jmiDTOpenSave) || (ae.getSource() == jmiDROpenSave)) {
             openSaveFile();
          }
-         
-         if ((ae.getSource() == jmiDTSaveAs) || (ae.getSource() == jmiDRSaveAs) ||
-             (ae.getSource() == jmiDTSave) || (ae.getSource() == jmiDRSave)) {
-            if ((ae.getSource() == jmiDTSaveAs) || (ae.getSource() == jmiDRSaveAs)) {
-               saveAs();
-            } else {
-               writeSave();
-            }
+
+         if ((ae.getSource() == jmiDTSaveAs) || (ae.getSource() == jmiDRSaveAs)) {
+            saveAs();
+         } else if ((ae.getSource() == jmiDTSave) || (ae.getSource() == jmiDRSave)) {
+            writeSave();
          }
-         
+
          if ((ae.getSource() == jmiDTExit) || (ae.getSource() == jmiDRExit)) {
             if (!dataSaved) {
                int answer = JOptionPane.showOptionDialog(null,
@@ -1175,15 +1176,19 @@ public class EdgeConvertGUI {
       if (!optParseFile.isPresent()) {
          return;
       }
-      parseFile = optParseFile.get();
 
-      EdgeConvertFileParser ecfp = new EdgeConvertFileParser(parseFile);
-      ecfp.openAndParse();
-      ecModel.tables = ecfp.getEdgeTables();
+      parseFile = optParseFile.get();
+      openEdgeFile(parseFile);
+   }
+
+   private void openEdgeFile(File parseFile) {
+      EdgeConvertFileParser parser = new EdgeConvertFileParser(parseFile);
+      parser.openAndParse();
+      ecModel.tables = parser.getEdgeTables();
       for (EdgeTable table : ecModel.tables) {
          table.makeArrays();
       }
-      ecModel.fields = ecfp.getEdgeFields();
+      ecModel.fields = parser.getEdgeFields();
       populateLists();
       saveFile = null;
       jmiDTSave.setEnabled(false);
@@ -1206,12 +1211,16 @@ public class EdgeConvertGUI {
       if (!optSaveFile.isPresent()) {
          return;
       }
-      saveFile = optSaveFile.get();
 
-      EdgeConvertFileParser ecfp = new EdgeConvertFileParser(saveFile);
-      ecfp.openAndParse();
-      ecModel.tables = ecfp.getEdgeTables();
-      ecModel.fields = ecfp.getEdgeFields();
+      saveFile = optSaveFile.get();
+      openSaveFile(saveFile);
+   }
+
+   private void openSaveFile(File saveFile) {
+      EdgeConvertFileParser parser = new EdgeConvertFileParser(saveFile);
+      parser.openAndParse();
+      ecModel.tables = parser.getEdgeTables();
+      ecModel.fields = parser.getEdgeFields();
       populateLists();
       parseFile = null;
       jmiDTSave.setEnabled(true);
@@ -1230,30 +1239,22 @@ public class EdgeConvertGUI {
    }
 
    protected Optional<File> showOpenEdgeFile() {
-      if (!dataSaved) {
-         int answer = JOptionPane.showConfirmDialog(null, "You currently have unsaved data. Continue?",
-                 "Are you sure?", JOptionPane.YES_NO_OPTION);
-         if (answer != JOptionPane.YES_OPTION) {
-            return Optional.empty();
-         }
-      }
-      jfcEdge.addChoosableFileFilter(effEdge);
-      int returnVal = jfcEdge.showOpenDialog(null);
-      if (returnVal != JFileChooser.APPROVE_OPTION) {
-         return Optional.empty();
-      }
-      return Optional.ofNullable(jfcEdge.getSelectedFile());
+      return showOpenFile(effEdge);
    }
 
    protected Optional<File> showOpenSaveFile() {
+      return showOpenFile(effSave);
+   }
+
+   protected Optional<File> showOpenFile(FileFilter filter) {
       if (!dataSaved) {
          int answer = JOptionPane.showConfirmDialog(null, "You currently have unsaved data. Continue?",
-                 "Are you sure?", JOptionPane.YES_NO_OPTION);
+               "Are you sure?", JOptionPane.YES_NO_OPTION);
          if (answer != JOptionPane.YES_OPTION) {
             return Optional.empty();
          }
       }
-      jfcEdge.addChoosableFileFilter(effSave);
+      jfcEdge.addChoosableFileFilter(filter);
       int returnVal = jfcEdge.showOpenDialog(null);
       if (returnVal != JFileChooser.APPROVE_OPTION) {
          return Optional.empty();
