@@ -1,9 +1,8 @@
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;   
-import javax.swing.event.*;
-import java.io.*;
-import java.util.*;
+package edu.rit.edgeconvert.convert;
+
+import edu.rit.edgeconvert.ui.EdgeConvertGUI;
+
+import javax.swing.*;
 
 public class CreateDDLMySQL extends EdgeConvertCreateDDL {
 

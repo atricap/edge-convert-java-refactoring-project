@@ -1,3 +1,5 @@
+package edu.rit.edgeconvert.ui;
+
 import org.junit.jupiter.api.Test;
 
 import javax.swing.*;

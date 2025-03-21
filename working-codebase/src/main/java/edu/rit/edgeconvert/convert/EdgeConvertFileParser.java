@@ -1,3 +1,7 @@
+package edu.rit.edgeconvert.convert;
+
+import edu.rit.edgeconvert.ui.EdgeConvertGUI;
+
 import java.io.*;
 import java.util.*;
 import javax.swing.*;

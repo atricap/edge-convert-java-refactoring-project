@@ -1,3 +1,5 @@
+package edu.rit.edgeconvert.convert;
+
 import org.junit.jupiter.api.Test;
 
 import java.io.File;

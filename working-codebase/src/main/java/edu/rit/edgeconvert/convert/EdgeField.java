@@ -1,3 +1,5 @@
+package edu.rit.edgeconvert.convert;
+
 import java.util.StringTokenizer;
 
 public class EdgeField {

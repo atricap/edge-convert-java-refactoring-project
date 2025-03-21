@@ -1,3 +1,7 @@
+package edu.rit.edgeconvert.ui;
+
+import edu.rit.edgeconvert.convert.EdgeConvertFileParserTest;
+
 import java.io.File;
 import java.util.Optional;
 

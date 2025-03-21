@@ -1,3 +1,9 @@
+package edu.rit.edgeconvert.ui;
+
+import edu.rit.edgeconvert.convert.EdgeConvertFileParser;
+import edu.rit.edgeconvert.convert.EdgeField;
+import edu.rit.edgeconvert.convert.EdgeTable;
+
 import java.io.*;
 
 public class EdgeConvertModel {

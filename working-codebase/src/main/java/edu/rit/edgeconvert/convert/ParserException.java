@@ -1,3 +1,5 @@
+package edu.rit.edgeconvert.convert;
+
 public class ParserException extends Exception {
 
    public ParserException(String message) {

@@ -1,3 +1,5 @@
+package edu.rit.edgeconvert.convert;
+
 import java.io.File;
 import java.util.Objects;
 

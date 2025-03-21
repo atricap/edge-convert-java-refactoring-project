@@ -36,12 +36,11 @@
 /*
  * @(#)ExampleFileFilter.java	1.14 03/01/23
  */
-
+package edu.rit.edgeconvert.ui;
 
 import java.io.File;
 import java.util.Hashtable;
 import java.util.Enumeration;
-import javax.swing.*;
 import javax.swing.filechooser.*;
 
 /**

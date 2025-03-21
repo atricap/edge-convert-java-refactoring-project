@@ -1,3 +1,7 @@
+package edu.rit.edgeconvert.ui;
+
+import edu.rit.edgeconvert.convert.*;
+
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.filechooser.FileFilter;
@@ -829,7 +833,7 @@ public class EdgeConvertGUI {
                   continue; //ignore all files that are not .class files
               }
               resultClass = Class.forName(resultFileName.substring(0, resultFileName.lastIndexOf(".")));
-              if (resultClass.getSuperclass().getName().equals("EdgeConvertCreateDDL")) { //only interested in classes that extend EdgeConvertCreateDDL
+              if (resultClass.getSuperclass().getName().equals("edu.rit.edgeconvert.convert.EdgeConvertCreateDDL")) { //only interested in classes that extend EdgeConvertCreateDDL
                   if (parseFile == null && saveFile == null) {
                       conResultClass = resultClass.getConstructor(paramTypesNull);
                   } else {
