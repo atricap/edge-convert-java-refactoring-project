@@ -1,7 +1,5 @@
 package edu.rit.edgeconvert.convert;
 
-import edu.rit.edgeconvert.ui.EdgeConvertGUI;
-
 import java.io.*;
 import java.util.*;
 import javax.swing.*;
@@ -28,7 +26,7 @@ public class EdgeConvertFileParser {
    /**
     * Identifies nature of Connector endpoints.
     */
-   private void resolveConnectors() {
+   private void resolveConnectors() throws ParserException {
       int endPoint1, endPoint2;
       int fieldIndex = 0, table1Index = 0, table2Index = 0;
       for (EdgeConnector connector : connectors) {
@@ -58,16 +56,18 @@ public class EdgeConvertFileParser {
 
          if (connector.getIsEP1Field() && connector.getIsEP2Field()) { //both endpoints are fields, implies lack of normalization
             JOptionPane.showMessageDialog(null, "The Edge Diagrammer file\n" + fileToParse + "\ncontains composite attributes. Please resolve them and try again.");
-            EdgeConvertGUI.setReadSuccess(false); //this tells GUI not to populate JList components
-            break; //stop processing list of Connectors
+            //this tells GUI not to populate JList components
+            //stop processing list of Connectors
+            throw new ParserException("Stop processing list of Connectors");
          }
 
          if (connector.getIsEP1Table() && connector.getIsEP2Table()) { //both endpoints are tables
             if (connector.getEndStyle1().contains("many") &&
                   connector.getEndStyle2().contains("many")) { //the connector represents a many-many relationship, implies lack of normalization
                JOptionPane.showMessageDialog(null, "There is a many-many relationship between tables\n\"" + tables[table1Index].getName() + "\" and \"" + tables[table2Index].getName() + "\"" + "\nPlease resolve this and try again.");
-               EdgeConvertGUI.setReadSuccess(false); //this tells GUI not to populate JList components
-               break; //stop processing list of Connectors
+               //this tells GUI not to populate JList components
+               //stop processing list of Connectors
+               throw new ParserException("Stop processing list of Connectors");
             } else { //add Figure number to each table's list of related tables
                tables[table1Index].addRelatedTable(tables[table2Index].getNumFigure());
                tables[table2Index].addRelatedTable(tables[table1Index].getNumFigure());
@@ -85,8 +85,9 @@ public class EdgeConvertFileParser {
             }
          } else if (fieldIndex >= 0) { //field has already been assigned to a table
             JOptionPane.showMessageDialog(null, "The attribute " + fields[fieldIndex].getName() + " is connected to multiple tables.\nPlease resolve this and try again.");
-            EdgeConvertGUI.setReadSuccess(false); //this tells GUI not to populate JList components
-            break; //stop processing list of Connectors
+            //this tells GUI not to populate JList components
+            //stop processing list of Connectors
+            throw new ParserException("Stop processing list of Connectors");
          }
       }
    }
@@ -171,7 +172,7 @@ public class EdgeConvertFileParser {
                }
                String style = currentLine.substring(currentLine.indexOf("\"") + 1, currentLine.lastIndexOf("\"")); //get the Style parameter
                if (style.startsWith("Relation")) { //presence of Relations implies lack of normalization
-                  throw new ParserException(String.format("The Edge Diagrammer file\n%s\ncontains relations.  Please resolve them and try again.", fileToParse));
+                  throw new ParserException(String.format("The Edge Diagrammer file\n%s\ncontains relations.  Please resolve them and try again.", fileToParse), true);
                }
                boolean isEntity = style.startsWith("Entity");
                boolean isAttribute = style.startsWith("Attribute");
@@ -181,7 +182,7 @@ public class EdgeConvertFileParser {
                currentLine = br.readLine().trim(); //this should be Text
                String text = currentLine.substring(currentLine.indexOf("\"") + 1, currentLine.lastIndexOf("\"")).replaceAll(" ", ""); //get the Text parameter
                if (text.isEmpty()) {
-                  throw new ParserException("There are entities or attributes with blank names in this diagram.\nPlease provide names for them and try again.");
+                  throw new ParserException("There are entities or attributes with blank names in this diagram.\nPlease provide names for them and try again.", true);
                }
                int escape = text.indexOf("\\");
                if (escape > 0) { //Edge denotes a line break as "\line", disregard anything after a backslash
@@ -196,7 +197,7 @@ public class EdgeConvertFileParser {
 
                if (isEntity) { //create a new EdgeTable object and add it to the alTables ArrayList
                   if (isTableDup(text)) {
-                     throw new ParserException("There are multiple tables called " + text + " in this diagram.\nPlease rename all but one of them and try again.");
+                     throw new ParserException("There are multiple tables called " + text + " in this diagram.\nPlease rename all but one of them and try again.", true);
                   }
                   alTables.add(new EdgeTable(numFigure + DELIM + text));
                }

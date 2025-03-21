@@ -719,7 +719,7 @@ public class EdgeConvertGUI {
    }
    
    private void populateLists() {
-      if (readSuccess) {
+      if (getReadSuccess()) {
          jfDT.setVisible(true);
          jfDR.setVisible(false);
          disableControls();
@@ -733,7 +733,7 @@ public class EdgeConvertGUI {
             }
          }
       }
-      readSuccess = true;
+      setReadSuccess(true);
    }
    
    private void saveAs() {
@@ -1200,7 +1200,9 @@ public class EdgeConvertGUI {
          System.out.println(e);
          System.exit(0);
       } catch (ParserException e) {
-         JOptionPane.showMessageDialog(null, e.getMessage());
+         if (e.isShowMessageDialog()) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
+         }
          EdgeConvertGUI.setReadSuccess(false);
       }
       ecModel.tables = parser.getEdgeTables();
@@ -1250,7 +1252,9 @@ public class EdgeConvertGUI {
          System.out.println(e);
          System.exit(0);
       } catch (ParserException e) {
-         JOptionPane.showMessageDialog(null, e.getMessage());
+         if (e.isShowMessageDialog()) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
+         }
          EdgeConvertGUI.setReadSuccess(false);
       }
       ecModel.tables = parser.getEdgeTables();
