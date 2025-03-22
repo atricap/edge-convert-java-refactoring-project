@@ -1,8 +1,7 @@
 package edu.rit.edgeconvert.convert;
 
-public abstract class EdgeConvertCreateDDL {
+public abstract class CreateDDL {
    static String[] products = {"MySQL"};
-   public static Class<?>[] implementations = {CreateDDLMySQL.class};
 
    protected EdgeTable[] tables; //master copy of EdgeTable objects
    protected EdgeField[] fields; //master copy of EdgeField objects
@@ -11,15 +10,15 @@ public abstract class EdgeConvertCreateDDL {
    protected StringBuffer sb;
    protected int selected;
    
-   public EdgeConvertCreateDDL(EdgeTable[] tables, EdgeField[] fields) {
+   public CreateDDL(EdgeTable[] tables, EdgeField[] fields) {
       this.tables = tables;
       this.fields = fields;
       initialize();
-   } //EdgeConvertCreateDDL(EdgeTable[], EdgeField[])
+   }
    
-   public EdgeConvertCreateDDL() { //default constructor with empty arg list for to allow output dir to be set before there are table and field objects
+   public CreateDDL() { //default constructor with empty arg list for to allow output dir to be set before there are table and field objects
       
-   } //EdgeConvertCreateDDL()
+   }
 
    public void initialize() {
       numBoundTables = new int[tables.length];
@@ -67,4 +66,4 @@ public abstract class EdgeConvertCreateDDL {
    
    public abstract void createDDL();
    
-}//EdgeConvertCreateDDL
+}

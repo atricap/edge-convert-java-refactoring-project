@@ -4,7 +4,7 @@ import edu.rit.edgeconvert.ui.EdgeConvertGUI;
 
 import javax.swing.*;
 
-public class CreateDDLMySQL extends EdgeConvertCreateDDL {
+public class CreateDDLMySQL extends CreateDDL {
 
    protected String databaseName;
    //this array is for determining how MySQL refers to datatypes
@@ -17,7 +17,7 @@ public class CreateDDLMySQL extends EdgeConvertCreateDDL {
    } //CreateDDLMySQL(EdgeTable[], EdgeField[])
    
    public CreateDDLMySQL() { //default constructor with empty arg list for to allow output dir to be set before there are table and field objects
-      
+      System.out.println("WARNING: new CreateDDL() called without arguments!");
    }
    
    public void createDDL() {
@@ -144,4 +144,4 @@ public class CreateDDLMySQL extends EdgeConvertCreateDDL {
       return sb.toString();
    }
    
-}//EdgeConvertCreateDDL
+}

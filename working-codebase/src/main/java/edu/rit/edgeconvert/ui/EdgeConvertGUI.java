@@ -8,9 +8,7 @@ import javax.swing.filechooser.FileFilter;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Optional;
 
@@ -35,10 +33,10 @@ public class EdgeConvertGUI {
    EdgeConvertModel ecModel;
    private static boolean readSuccess = true; //this tells GUI whether to populate JList components or not
    private boolean dataSaved = true;
-   private final ArrayList<Object> alSubclasses = new ArrayList<>();
+   private final ArrayList<CreateDDL> alSubclasses = new ArrayList<>();
    private final ArrayList<String> alProductNames = new ArrayList<>();
    private String[] productNames;
-   private Object[] objSubclasses;
+   private CreateDDL[] objSubclasses;
 
    //Define Tables screen objects
    JFrame jfDT;
@@ -770,9 +768,10 @@ public class EdgeConvertGUI {
    private void getOutputClasses() {
       alProductNames.clear();
       alSubclasses.clear();
-      for (Class<?> resultClass : EdgeConvertCreateDDL.implementations) {
+      for (Class<? extends CreateDDLFactory> factoryClass : CreateDDLFactory.implementations) {
          try {
-            addCreateDDLImpl(resultClass);
+            CreateDDLFactory createDDLFactory = factoryClass.getConstructor().newInstance();
+            addCreateDDLImpl(createDDLFactory);
          } catch (InstantiationException |
                   IllegalAccessException |
                   NoSuchMethodException |
@@ -782,22 +781,20 @@ public class EdgeConvertGUI {
       }
       if (!alProductNames.isEmpty() && !alSubclasses.isEmpty()) { //do not recreate productName and objSubClasses arrays if the new path is empty of valid files
          productNames = alProductNames.toArray(new String[0]);
-         objSubclasses = alSubclasses.toArray(new Object[0]);
+         objSubclasses = alSubclasses.toArray(new CreateDDL[0]);
       }
    }
 
-   private void addCreateDDLImpl(Class<?> resultClass) throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-      Object resultInstance = null;
+   private void addCreateDDLImpl(CreateDDLFactory createDDLFactory) throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+      final CreateDDL createDDL;
       if (parseFile == null && saveFile == null) {
-         Constructor<?> conResultClass = resultClass.getConstructor();
+         createDDL = createDDLFactory.create();
       } else {
-         Constructor<?> conResultClass = resultClass.getConstructor(EdgeTable[].class, EdgeField[].class);
-         resultInstance = conResultClass.newInstance(ecModel.tables, ecModel.fields);
+         createDDL = createDDLFactory.create(ecModel.tables, ecModel.fields);
       }
-      alSubclasses.add(resultInstance);
+      alSubclasses.add(createDDL);
 
-      Method getProductName = resultClass.getMethod("getProductName");
-      String productName = (String) getProductName.invoke(resultInstance);
+      String productName = createDDL.getProductName();
       alProductNames.add(productName);
    }
 
@@ -823,17 +820,9 @@ public class EdgeConvertGUI {
          }
       }
 
-      try {
-         Class<?> selectedSubclass = objSubclasses[selected].getClass();
-         Method getSQLString = selectedSubclass.getMethod("getSQLString", null);
-         Method getDatabaseName = selectedSubclass.getMethod("getDatabaseName", null);
-         strSQLString = (String)getSQLString.invoke(objSubclasses[selected], null);
-         databaseName = (String)getDatabaseName.invoke(objSubclasses[selected], null);
-      } catch (IllegalAccessException |
-               NoSuchMethodException |
-               InvocationTargetException ex) {
-         ex.printStackTrace();
-      }
+      CreateDDL createDDL = objSubclasses[selected];
+      strSQLString = createDDL.getSQLString();
+      databaseName = createDDL.getDatabaseName();
 
       return strSQLString;
    }
