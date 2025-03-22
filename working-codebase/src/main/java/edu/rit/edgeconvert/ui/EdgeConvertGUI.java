@@ -24,9 +24,9 @@ public class EdgeConvertGUI {
    public static final String DEFINE_RELATIONS = "Define Relations";
    public static final String CANCELLED = "CANCELLED";
 
-   private JFileChooser jfcEdge, jfcOutputDir;
+   private JFileChooser jfcEdge;
    private ExampleFileFilter effEdge, effSave;
-   private File parseFile, saveFile, outputDir;
+   private File parseFile, saveFile;
    private String truncatedFilename;
    private String databaseName;
    EdgeRadioButtonListener radioListener;
@@ -35,8 +35,8 @@ public class EdgeConvertGUI {
    EdgeConvertModel ecModel;
    private static boolean readSuccess = true; //this tells GUI whether to populate JList components or not
    private boolean dataSaved = true;
-   private ArrayList<Object> alSubclasses;
-   private ArrayList<String> alProductNames;
+   private final ArrayList<Object> alSubclasses = new ArrayList<>();
+   private final ArrayList<String> alProductNames = new ArrayList<>();
    private String[] productNames;
    private Object[] objSubclasses;
 
@@ -53,7 +53,7 @@ public class EdgeConvertGUI {
    JScrollPane jspDTTablesAll, jspDTFieldsTablesAll;
    JList<String> jlDTTablesAll, jlDTFieldsTablesAll;
    DefaultListModel<String> dlmDTTablesAll, dlmDTFieldsTablesAll;
-   JMenuItem jmiDTOpenEdge, jmiDTOpenSave, jmiDTSave, jmiDTSaveAs, jmiDTExit, jmiDTOptionsOutputLocation, jmiDTOptionsShowProducts, jmiDTHelpAbout;
+   JMenuItem jmiDTOpenEdge, jmiDTOpenSave, jmiDTSave, jmiDTSaveAs, jmiDTExit, jmiDTOptionsShowProducts, jmiDTHelpAbout;
    
    //Define Relations screen objects
    JFrame jfDR;
@@ -62,7 +62,7 @@ public class EdgeConvertGUI {
    DefaultListModel<String> dlmDRTablesRelations, dlmDRTablesRelatedTo, dlmDRFieldsTablesRelations, dlmDRFieldsTablesRelatedTo;
    JLabel jlabDRTablesRelations, jlabDRTablesRelatedTo, jlabDRFieldsTablesRelations, jlabDRFieldsTablesRelatedTo;
    JScrollPane jspDRTablesRelations, jspDRTablesRelatedTo, jspDRFieldsTablesRelations, jspDRFieldsTablesRelatedTo;
-   JMenuItem jmiDROpenEdge, jmiDROpenSave, jmiDRSave, jmiDRSaveAs, jmiDRExit, jmiDROptionsOutputLocation, jmiDROptionsShowProducts, jmiDRHelpAbout;
+   JMenuItem jmiDROpenEdge, jmiDROpenSave, jmiDRSave, jmiDRSaveAs, jmiDRExit, jmiDROptionsShowProducts, jmiDRHelpAbout;
 
    public static EdgeConvertGUI launch(String... args) {
       EdgeConvertGUI gui = new EdgeConvertGUI();
@@ -176,14 +176,9 @@ public class EdgeConvertGUI {
          JMenu jmDTOptions = new JMenu("Options");
          jmDTOptions.setMnemonic(KeyEvent.VK_O);
          mb.add(jmDTOptions);
-         gui.jmiDTOptionsOutputLocation = new JMenuItem("Set Output File Definition Location");
-         gui.jmiDTOptionsOutputLocation.setMnemonic(KeyEvent.VK_S);
-         gui.jmiDTOptionsOutputLocation.addActionListener(menuListener);
          gui.jmiDTOptionsShowProducts = new JMenuItem("Show Database Products Available");
          gui.jmiDTOptionsShowProducts.setMnemonic(KeyEvent.VK_H);
-         gui.jmiDTOptionsShowProducts.setEnabled(false);
          gui.jmiDTOptionsShowProducts.addActionListener(menuListener);
-         jmDTOptions.add(gui.jmiDTOptionsOutputLocation);
          jmDTOptions.add(gui.jmiDTOptionsShowProducts);
 
          JMenu jmDTHelp = new JMenu("Help");
@@ -195,10 +190,8 @@ public class EdgeConvertGUI {
          jmDTHelp.add(gui.jmiDTHelpAbout);
 
          gui.jfcEdge = new JFileChooser();
-         gui.jfcOutputDir = new JFileChooser();
          gui.effEdge = new ExampleFileFilter("edg", "Edge Diagrammer Files");
          gui.effSave = new ExampleFileFilter("sav", "Edge Convert Save Files");
-         gui.jfcOutputDir.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
          return mb;
       }
@@ -377,14 +370,9 @@ public class EdgeConvertGUI {
          JMenu jmDROptions = new JMenu("Options");
          jmDROptions.setMnemonic(KeyEvent.VK_O);
          mb.add(jmDROptions);
-         gui.jmiDROptionsOutputLocation = new JMenuItem("Set Output File Definition Location");
-         gui.jmiDROptionsOutputLocation.setMnemonic(KeyEvent.VK_S);
-         gui.jmiDROptionsOutputLocation.addActionListener(menuListener);
          gui.jmiDROptionsShowProducts = new JMenuItem("Show Database Products Available");
          gui.jmiDROptionsShowProducts.setMnemonic(KeyEvent.VK_H);
-         gui.jmiDROptionsShowProducts.setEnabled(false);
          gui.jmiDROptionsShowProducts.addActionListener(menuListener);
-         jmDROptions.add(gui.jmiDROptionsOutputLocation);
          jmDROptions.add(gui.jmiDROptionsShowProducts);
 
          JMenu jmDRHelp = new JMenu("Help");
@@ -771,94 +759,48 @@ public class EdgeConvertGUI {
       dataSaved = true;
    }
 
-   private void setOutputDir() {
-      int returnVal;
-      File outputDirOld = outputDir;
-      alSubclasses = new ArrayList<>();
-      alProductNames = new ArrayList<>();
-
-      returnVal = jfcOutputDir.showOpenDialog(null);
-      
-      if (returnVal == JFileChooser.CANCEL_OPTION) {
-         return;
-      }
-
-      if (returnVal == JFileChooser.APPROVE_OPTION) {
-         outputDir = jfcOutputDir.getSelectedFile();
-      }
-      
-      getOutputClasses();
-
-      if (alProductNames.isEmpty()) {
-         JOptionPane.showMessageDialog(null, "The path:\n" + outputDir + "\ncontains no valid output definition files.");
-         outputDir = outputDirOld;
-         return;
-      }
-      
-      if ((parseFile != null || saveFile != null) && outputDir != null) {
-         jbDTCreateDDL.setEnabled(true);
-         jbDRCreateDDL.setEnabled(true);
-      }
-
-      JOptionPane.showMessageDialog(null, "The available products to create DDL statements are:\n" + displayProductNames());
-      jmiDTOptionsShowProducts.setEnabled(true);
-      jmiDROptionsShowProducts.setEnabled(true);
-   }
-   
    private String displayProductNames() {
       StringBuilder sb = new StringBuilder();
-      for (String productName : productNames) {
+      for (String productName : productNames != null ? productNames : new String[0]) {
          sb.append(productName).append('\n');
       }
       return sb.toString();
    }
    
    private void getOutputClasses() {
-      File[] resultFiles;
-      Class<?> resultClass = null;
-      Class<?>[] paramTypes = {EdgeTable[].class, EdgeField[].class};
-      Class<?>[] paramTypesNull = {};
-      Constructor<?> conResultClass;
-      Object[] args = {ecModel.tables, ecModel.fields};
-      Object objOutput = null;
-
-      resultFiles = outputDir.listFiles();
       alProductNames.clear();
       alSubclasses.clear();
-      try {
-          for (File resultFile : resultFiles) {
-             final String resultFileName = resultFile.getName();
-             System.out.println(resultFileName);
-              if (!resultFileName.endsWith(".class")) {
-                  continue; //ignore all files that are not .class files
-              }
-              resultClass = Class.forName(resultFileName.substring(0, resultFileName.lastIndexOf(".")));
-              if (resultClass.getSuperclass().getName().equals("edu.rit.edgeconvert.convert.EdgeConvertCreateDDL")) { //only interested in classes that extend EdgeConvertCreateDDL
-                  if (parseFile == null && saveFile == null) {
-                      conResultClass = resultClass.getConstructor(paramTypesNull);
-                  } else {
-                      conResultClass = resultClass.getConstructor(paramTypes);
-                      objOutput = conResultClass.newInstance(args);
-                  }
-                  alSubclasses.add(objOutput);
-                  Method getProductName = resultClass.getMethod("getProductName", null);
-                  String productName = (String) getProductName.invoke(objOutput, null);
-                  alProductNames.add(productName);
-              }
-          }
-      } catch (InstantiationException |
-               ClassNotFoundException |
-               IllegalAccessException |
-               NoSuchMethodException |
-               InvocationTargetException ex) {
-         ex.printStackTrace();
+      for (Class<?> resultClass : EdgeConvertCreateDDL.implementations) {
+         try {
+            addCreateDDLImpl(resultClass);
+         } catch (InstantiationException |
+                  IllegalAccessException |
+                  NoSuchMethodException |
+                  InvocationTargetException ex) {
+            ex.printStackTrace();
+         }
       }
       if (!alProductNames.isEmpty() && !alSubclasses.isEmpty()) { //do not recreate productName and objSubClasses arrays if the new path is empty of valid files
          productNames = alProductNames.toArray(new String[0]);
          objSubclasses = alSubclasses.toArray(new Object[0]);
       }
    }
-   
+
+   private void addCreateDDLImpl(Class<?> resultClass) throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+      Object resultInstance = null;
+      if (parseFile == null && saveFile == null) {
+         Constructor<?> conResultClass = resultClass.getConstructor();
+      } else {
+         Constructor<?> conResultClass = resultClass.getConstructor(EdgeTable[].class, EdgeField[].class);
+         resultInstance = conResultClass.newInstance(ecModel.tables, ecModel.fields);
+      }
+      alSubclasses.add(resultInstance);
+
+      Method getProductName = resultClass.getMethod("getProductName");
+      String productName = (String) getProductName.invoke(resultInstance);
+      alProductNames.add(productName);
+   }
+
    private String getSQLStatements() {
       String strSQLString = "";
       String response = (String)JOptionPane.showInputDialog(
@@ -1110,11 +1052,7 @@ public class EdgeConvertGUI {
    
    class CreateDDLButtonListener implements ActionListener {
       @Override public void actionPerformed(ActionEvent ae) {
-         while (outputDir == null) {
-            JOptionPane.showMessageDialog(null, "You have not selected a path that contains valid output definition files yet.\nPlease select a path now.");
-            setOutputDir();
-         }
-         getOutputClasses(); //in case outputDir was set before a file was loaded and EdgeTable/EdgeField objects created
+         getOutputClasses();
          final String sqlString = getSQLStatements();
          if (sqlString.equals(EdgeConvertGUI.CANCELLED)) {
             return;
@@ -1159,10 +1097,6 @@ public class EdgeConvertGUI {
             System.exit(0); //No was selected
          }
          
-         if ((ae.getSource() == jmiDTOptionsOutputLocation) || (ae.getSource() == jmiDROptionsOutputLocation)) {
-            setOutputDir();
-         }
-
          if ((ae.getSource() == jmiDTOptionsShowProducts) || (ae.getSource() == jmiDROptionsShowProducts)) {
             JOptionPane.showMessageDialog(null, "The available products to create DDL statements are:\n" + displayProductNames());
          }
@@ -1172,8 +1106,8 @@ public class EdgeConvertGUI {
                                                 "by Stephen A. Capperell\n" +
                                                 "© 2007-2008");
          }
-      } // EdgeMenuListener.actionPerformed()
-   } // EdgeMenuListener
+      }
+   }
 
    private void openEdgeFile() {
       Optional<File> optParseFile = showOpenEdgeFile();

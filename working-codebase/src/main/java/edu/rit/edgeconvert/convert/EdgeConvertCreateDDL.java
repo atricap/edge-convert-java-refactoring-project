@@ -2,6 +2,8 @@ package edu.rit.edgeconvert.convert;
 
 public abstract class EdgeConvertCreateDDL {
    static String[] products = {"MySQL"};
+   public static Class<?>[] implementations = {CreateDDLMySQL.class};
+
    protected EdgeTable[] tables; //master copy of EdgeTable objects
    protected EdgeField[] fields; //master copy of EdgeField objects
    protected int[] numBoundTables;
