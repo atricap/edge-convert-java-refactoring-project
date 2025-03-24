@@ -832,32 +832,41 @@ public class EdgeConvertGUI {
       jfcEdge.resetChoosableFileFilters();
       File fileToUse = parseFile != null ? parseFile : saveFile;
       String prefix = fileToUse.getAbsolutePath().substring(
-              0,
-              (fileToUse.getAbsolutePath().lastIndexOf(File.separator) + 1));
+              0, fileToUse.getAbsolutePath().lastIndexOf(File.separator) + 1);
       File outputFile = new File(prefix + databaseName + ".sql");
       if (databaseName.isEmpty()) {
          return;
       }
+
       jfcEdge.setSelectedFile(outputFile);
       int returnVal = jfcEdge.showSaveDialog(null);
-      if (returnVal == JFileChooser.APPROVE_OPTION) {
-         outputFile = jfcEdge.getSelectedFile();
-         if (outputFile.exists ()) {
-             int response = JOptionPane.showConfirmDialog(null, "Overwrite existing file?", "Confirm Overwrite",
-                                                         JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
-             if (response == JOptionPane.CANCEL_OPTION) {
-                return;
-             }
-         }
-         try {
-            PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(outputFile, false)));
-            //write the SQL statements
-            pw.println(output);
-            //close the file
-            pw.close();
-         } catch (IOException ioe) {
-            System.out.println(ioe);
-         }
+      if (returnVal != JFileChooser.APPROVE_OPTION) {
+         return;
+      }
+
+      outputFile = jfcEdge.getSelectedFile();
+      if (outputFile.exists()) {
+         int response = JOptionPane.showConfirmDialog(
+               null,
+               "Overwrite existing file?",
+               "Confirm Overwrite",
+               JOptionPane.OK_CANCEL_OPTION,
+               JOptionPane.QUESTION_MESSAGE);
+          if (response == JOptionPane.CANCEL_OPTION) {
+             return;
+          }
+      }
+
+      try {
+         writeSQLToFile(output, outputFile);
+      } catch (IOException e) {
+         System.out.println(e);
+      }
+   }
+
+   private static void writeSQLToFile(String output, File outputFile) throws IOException {
+      try (PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(outputFile, false)))) {
+         pw.println(output);
       }
    }
 
