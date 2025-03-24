@@ -36,8 +36,8 @@ public class EdgeConvertGUI {
    private boolean dataSaved = true;
    private final ArrayList<CreateDDL> alSubclasses = new ArrayList<>();
    private final ArrayList<String> alProductNames = new ArrayList<>();
-   private String[] productNames;
-   private CreateDDL[] objSubclasses;
+   private String[] productNames = new String[0];
+   private CreateDDL[] objSubclasses = new CreateDDL[0];
 
    //Define Tables screen objects
    JFrame jfDT;
@@ -760,7 +760,7 @@ public class EdgeConvertGUI {
 
    private String displayProductNames() {
       StringBuilder sb = new StringBuilder();
-      for (String productName : productNames != null ? productNames : new String[0]) {
+      for (String productName : productNames) {
          sb.append(productName).append('\n');
       }
       return sb.toString();
