@@ -11,6 +11,7 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.ServiceLoader;
 
 public class EdgeConvertGUI {
    
@@ -768,9 +769,9 @@ public class EdgeConvertGUI {
    private void getOutputClasses() {
       alProductNames.clear();
       alSubclasses.clear();
-      for (Class<? extends CreateDDLFactory> factoryClass : CreateDDLFactory.implementations) {
+      ServiceLoader<CreateDDLFactory> loader = ServiceLoader.load(CreateDDLFactory.class);
+      for (CreateDDLFactory createDDLFactory : loader) {
          try {
-            CreateDDLFactory createDDLFactory = factoryClass.getConstructor().newInstance();
             addCreateDDLImpl(createDDLFactory);
          } catch (InstantiationException |
                   IllegalAccessException |
