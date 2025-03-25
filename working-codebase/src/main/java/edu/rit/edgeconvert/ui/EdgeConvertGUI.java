@@ -12,6 +12,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class EdgeConvertGUI {
    
@@ -64,8 +65,13 @@ public class EdgeConvertGUI {
    JMenuItem jmiDROpenEdge, jmiDROpenSave, jmiDRSave, jmiDRSaveAs, jmiDRExit, jmiDROptionsShowProducts, jmiDRHelpAbout;
 
    public static EdgeConvertGUI launch(String... args) {
-      EdgeConvertGUI gui = new EdgeConvertGUI();
-      return gui;
+      final AtomicReference<EdgeConvertGUI> guiRef = new AtomicReference<>();
+      try {
+         SwingUtilities.invokeAndWait(() -> guiRef.set(new EdgeConvertGUI()));
+      } catch (InterruptedException | InvocationTargetException e) {
+         throw new RuntimeException(e);
+      }
+      return guiRef.get();
    }
    
    public EdgeConvertGUI() {
