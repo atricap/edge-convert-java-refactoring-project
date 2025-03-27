@@ -132,20 +132,20 @@ public class EdgeConvertGUI {
 
       private JFrame createDTScreen() {
          JFrame f = new JFrame(DEFINE_TABLES);
-         f.setLocation(HORIZ_LOC, VERT_LOC);
          f.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
          f.addWindowListener(edgeWindowListener);
-         Container cp = f.getContentPane();
-         cp.setLayout(new BorderLayout());
-         f.setVisible(true);
-         f.setSize(HORIZ_SIZE + 150, VERT_SIZE);
 
          f.setJMenuBar(createDTMenuBar());
 
+         Container cp = f.getContentPane();
+         cp.setLayout(new BorderLayout());
          cp.add(createDTBottom(), BorderLayout.SOUTH);
          cp.add(createDTCenter(), BorderLayout.CENTER);
 
+         f.setLocation(HORIZ_LOC, VERT_LOC);
+         f.setSize(HORIZ_SIZE + 150, VERT_SIZE);
          f.validate();
+         f.setVisible(true);
          return f;
       }
 
@@ -328,18 +328,18 @@ public class EdgeConvertGUI {
 
       private JFrame createDRScreen() {
          JFrame f = new JFrame(DEFINE_RELATIONS);
-         f.setSize(HORIZ_SIZE, VERT_SIZE);
-         f.setLocation(HORIZ_LOC, VERT_LOC);
          f.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
          f.addWindowListener(edgeWindowListener);
-         Container cp = f.getContentPane();
-         cp.setLayout(new BorderLayout());
 
          f.setJMenuBar(createDRMenuBar());
 
+         Container cp = f.getContentPane();
+         cp.setLayout(new BorderLayout());
          cp.add(createDRCenter(), BorderLayout.CENTER);
          cp.add(createDRBottom(), BorderLayout.SOUTH);
 
+         f.setLocation(HORIZ_LOC, VERT_LOC);
+         f.setSize(HORIZ_SIZE, VERT_SIZE);
          return f;
       }
 
